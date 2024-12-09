@@ -1,4 +1,4 @@
-package processing.mode.java;
+package processing.mode.java.preproc;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +31,7 @@ public class TextTransform {
   private int builtForLength;
 
 
-  TextTransform(CharSequence input) {
+  public TextTransform(CharSequence input) {
     this.input = input;
   }
 
@@ -213,7 +213,7 @@ public class TextTransform {
   }
 
 
-  protected interface OffsetMapper {
+  public interface OffsetMapper {
     int getInputOffset(int outputOffset);
     int getOutputOffset(int inputOffset);
     OffsetMapper thenMapping(OffsetMapper mapper);

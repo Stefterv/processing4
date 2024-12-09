@@ -15,7 +15,7 @@ repositories {
 sourceSets{
     main{
         java{
-            srcDirs("src/processing")
+            srcDirs("src")
         }
         resources{
             srcDirs("src")
@@ -67,4 +67,7 @@ mavenPublishing{
 
 tasks.test {
     useJUnit()
+}
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
