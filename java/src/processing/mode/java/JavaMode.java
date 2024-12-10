@@ -25,6 +25,9 @@ package processing.mode.java;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,6 +36,7 @@ import processing.app.ui.Editor;
 import processing.app.ui.EditorException;
 import processing.app.ui.EditorState;
 
+import processing.mode.java.preproc.SketchException;
 import processing.mode.java.runner.Runner;
 import processing.mode.java.tweak.SketchParser;
 
@@ -56,7 +60,60 @@ public class JavaMode extends Mode {
   public String getTitle() {
     return "Java";
   }
+  
+  File resourcesFolder;
 
+  @Deprecated
+  @Override
+  public File[] getKeywordFiles() {
+    var url = JavaMode.class.getClassLoader().getResource("keywords.txt");
+    if(url != null) {
+      if(resourcesFolder == null){
+        try {
+          resourcesFolder = Files.createTempDirectory("processing").toFile();
+          copyFromJar("/", resourcesFolder.toPath());
+          return new File[] { new File(resourcesFolder, "keywords.txt") };
+        } catch (IOException | URISyntaxException e) {
+          e.printStackTrace();
+        }
+      }else{
+        return new File[] { new File(resourcesFolder, "keywords.txt") };
+      }
+
+      return new File[] { new File(url.getFile()) };
+    }
+    return new File[] { new File(folder, "keywords.txt") };
+  }
+  @Deprecated
+  public static void copyFromJar(String source, final Path target) throws URISyntaxException, IOException {
+    var resource = JavaMode.class.getResource("").toURI();
+    var fileSystem = FileSystems.newFileSystem(
+            resource,
+            Collections.<String, String>emptyMap()
+    );
+
+
+    final Path jarPath = fileSystem.getPath(source);
+
+    Files.walkFileTree(jarPath, new SimpleFileVisitor<Path>() {
+
+      private Path currentTarget;
+
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        currentTarget = target.resolve(jarPath.relativize(dir).toString());
+        Files.createDirectories(currentTarget);
+        return FileVisitResult.CONTINUE;
+      }
+
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        Files.copy(file, target.resolve(jarPath.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+        return FileVisitResult.CONTINUE;
+      }
+
+    });
+  }
 
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 

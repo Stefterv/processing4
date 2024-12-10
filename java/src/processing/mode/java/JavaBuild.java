@@ -42,8 +42,10 @@ import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.data.StringList;
 import processing.data.XML;
+import processing.mode.java.preproc.ImportStatement;
 import processing.mode.java.preproc.PdePreprocessor;
 import processing.mode.java.preproc.PreprocessorResult;
+import processing.mode.java.preproc.SketchException;
 
 
 public class JavaBuild {
@@ -275,7 +277,12 @@ public class JavaBuild {
 
     for (ImportStatement item : result.getImportStatements()) {
       String entry = item.getPackageName();
-      Library library = mode.getLibrary(entry);
+      Library library = null;
+      try{
+        library = mode.getLibrary(entry);
+      }catch (processing.app.SketchException e){
+        throw new SketchException(e.getMessage());
+      }
 
       if (library != null) {
         if (!importedLibraries.contains(library)) {

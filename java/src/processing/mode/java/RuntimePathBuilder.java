@@ -41,6 +41,7 @@ import processing.app.Messages;
 import processing.app.Sketch;
 import processing.app.SketchException;
 import processing.app.Util;
+import processing.mode.java.preproc.ImportStatement;
 
 
 /**
