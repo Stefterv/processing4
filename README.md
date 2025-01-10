@@ -1,7 +1,7 @@
 <!-- Uncomment the shield below once the repo is made public -->
 <!-- [![All Contributors](https://img.shields.io/github/all-contributors/processing/processing4?color=ee8449)](#contributors) -->
 
-<img src="https://processing.org/favicon.svg" width="250">
+<img alt="Processing Logo" src="https://processing.org/favicon.svg" width="250">
 
 Processing is a flexible software sketchbook and a programming language designed for learning how to code.
 
@@ -9,7 +9,12 @@ This repository contains the source code for the [Processing](https://processing
 
 ## Announcing Processing 4.3.1
 
-We’re excited to announce the release of Processing 4.3.1! This update brings tooling improvements and a friendlier experience for contributors. To learn more, read the [Processing 4.3.1 announcement](https://github.com/processing/processing4-carbon-aug-19/wiki/Announcing-Processing-4.3.1-(release-candidate)).
+We’re excited to announce the release of Processing 4.3.1! This update brings tooling improvements and a friendlier experience for contributors. To learn more, read the [Processing 4.3.1 announcement](https://github.com/processing/processing4-carbon-aug-19/wiki/Announcing-Processing-4.3.1).
+
+Processing was initiated in 2001 by Ben Fry and Casey Reas, who lead the development and maintenance of the project until 2023. We are grateful for their vision and dedication to the project. Processing is also indebted to over two decades of contributions from the broader Processing community. 
+
+> [!NOTE] 
+> Due to platform limitations, the GitHub Contributors page for this repository does not show the complete list of contributors. However, the [git commit history](https://github.com/processing/processing4/commits/main/) provides a full record of the project's contributions. For contributor graphs before November 13th, refer to [this page](https://github.com/benfry/processing4/graphs/contributors). A comprehensive [list of all contributors](#contributors) is also included below. To see all commits by a contributor, click on the [💻](https://github.com/processing/processing4/commits?author=benfry) emoji below their name.
 
 ## Using Processing
 
@@ -274,6 +279,7 @@ Add yourself to the contributors list [here](https://github.com/processing/proce
       <td align="center" valign="top" width="16.66%"><a href="https://github.com/rishabdev2997"><img src="https://avatars.githubusercontent.com/u/107137565?v=4?s=120" width="120px;" alt="Rishabdev Tudu"/><br /><sub><b>Rishabdev Tudu</b></sub></a><br /><a href="https://github.com/processing/processing4/commits?author=rishabdev2997" title="Documentation">📖</a> <a href="https://github.com/processing/processing4/commits?author=rishabdev2997" title="Code">💻</a></td>
       <td align="center" valign="top" width="16.66%"><a href="http://plopez.me"><img src="https://avatars.githubusercontent.com/u/37042253?v=4?s=120" width="120px;" alt="Pau"/><br /><sub><b>Pau</b></sub></a><br /><a href="https://github.com/processing/processing4/commits?author=plopez01" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="16.66%"><a href="http://d.hatena.ne.jp/junology/"><img src="https://avatars.githubusercontent.com/u/1933073?v=4?s=120" width="120px;" alt="Junology"/><br /><sub><b>Junology</b></sub></a><br /><a href="https://github.com/processing/processing4/commits?author=Junology" title="Code">💻</a></td>
+      <td align="center" valign="top" width="16.66%"><a href="https://github.com/twisst"><img src="https://avatars.githubusercontent.com/u/2244463?v=4?s=120" width="120px;" alt="Jaap Meijers"/><br /><sub><b>Jaap Meijers</b></sub></a><br /><a href="https://github.com/processing/processing4/commits?author=twisst" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
