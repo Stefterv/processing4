@@ -30,3 +30,4 @@ JNIEXPORT void JNICALL Java_processing_core_ThinkDifferent_activate
 {
     [NSApp activate];
 }
+
