@@ -440,15 +440,102 @@ public class PShapeSVG extends PShape {
   }
 
 
+  /**
+   * Parse <rect> element.
+   * Syntax defined at https://www.w3.org/TR/SVG11/shapes.html#RectElement
+   */
   protected void parseRect() {
-    kind = RECT;
-    family = PRIMITIVE;
-    params = new float[] {
-      getFloatWithUnit(element, "x", svgWidth),
-      getFloatWithUnit(element, "y", svgHeight),
-      getFloatWithUnit(element, "width", svgWidth),
-      getFloatWithUnit(element, "height", svgHeight)
-    };
+    // Load rectangle parameters
+    float x = getFloatWithUnit(element, "x", svgWidth);
+    float y = getFloatWithUnit(element, "y", svgHeight);
+    float w = getFloatWithUnit(element, "width", svgWidth);
+    float h = getFloatWithUnit(element, "height", svgHeight);
+
+    // The specification above says zero size should disable rendering.
+    // The resulting shape is an empty GROUP shape since it is the most light one in drawing.
+    if (w <= 0f || h <= 0f) {
+      kind = 0;
+      family = GROUP;
+      childCount = 0;
+      children = null;
+      vertexCount = 0;
+      visible = false;
+      return;
+    }
+
+    // Determine the values of rx and ry from attributes
+    String rxAttr = element.getString("rx");
+    String ryAttr = element.getString("ry");
+    float rx = rxAttr == null ? -1f : parseUnitSize(rxAttr, svgWidth);
+    float ry = ryAttr == null ? -1f : parseUnitSize(ryAttr, svgHeight);
+    if (rx < 0f && ry > 0f)
+      rx = ry;
+    if (rx > 0f && ry < 0f)
+      ry = rx;
+    if (rx > w/2)
+      rx = w/2;
+    if (ry > h/2)
+      ry = h/2;
+
+    // Determine the vertices
+    if (rx <= 0f || ry <= 0f) {
+      kind = RECT;
+      family = PRIMITIVE;
+      params = new float[] {x, y, w, h};
+    }
+    else if (rx == ry) {
+      kind = RECT;
+      family = PRIMITIVE;
+      params = new float[] {x, y, w, h, rx};
+    }
+    else {
+      kind = 0;
+      family = PATH;
+      close = true;
+      vertexCount = 16;
+      vertices = new float[vertexCount][2];
+      vertexCodes = new int[8];
+      parsePathCode(VERTEX);
+      vertices[0][X] = x;
+      vertices[0][Y] = y + ry;
+      parsePathCode(BEZIER_VERTEX);
+      vertices[1][X] = x;
+      vertices[1][Y] = y + 0.4476f * ry;
+      vertices[2][X] = x + 0.4476f * rx;
+      vertices[2][Y] = y;
+      vertices[3][X] = x + rx;
+      vertices[3][Y] = y;
+      parsePathCode(VERTEX);
+      vertices[4][X] = x + w - rx;
+      vertices[4][Y] = y;
+      parsePathCode(BEZIER_VERTEX);
+      vertices[5][X] = x + w - 0.4476f * rx;
+      vertices[5][Y] = y;
+      vertices[6][X] = x + w;
+      vertices[6][Y] = y + 0.4476f * ry;
+      vertices[7][X] = x + w;
+      vertices[7][Y] = y + ry;
+      parsePathCode(VERTEX);
+      vertices[8][X] = x + w;
+      vertices[8][Y] = y + h - ry;
+      parsePathCode(BEZIER_VERTEX);
+      vertices[9][X] = x + w;
+      vertices[9][Y] = y + h - 0.4476f * ry;
+      vertices[10][X] = x + w - 0.4476f * rx;
+      vertices[10][Y] = y + h;
+      vertices[11][X] = x + w - rx;
+      vertices[11][Y] = y + h;
+      parsePathCode(VERTEX);
+      vertices[12][X] = x + rx;
+      vertices[12][Y] = y + h;
+      parsePathCode(BEZIER_VERTEX);
+      vertices[13][X] = x + 0.4476f * rx;
+      vertices[13][Y] = y + h;
+      vertices[14][X] = x;
+      vertices[14][Y] = y + h - 0.4476f * ry;
+      vertices[15][X] = x;
+      vertices[15][Y] = y + h- ry;
+    }
   }
 
 
