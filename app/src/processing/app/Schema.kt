@@ -88,6 +88,9 @@ class Schema {
                 modeFile.writeText("mode.id=$mode")
             }
 
+            if(!arrayOf("data", "code", "pde").any { options.containsKey(it) }) return
+
+            // Set the sketch to not safe
         }
         private fun downloadFiles(uri: URI, urlList: String, targetFolder: File){
             Thread{
@@ -125,9 +128,6 @@ class Schema {
                             var url = URI.create(content)
                             if(url.host == null){
                                 url = URI.create("https://$base/$content")
-                            }
-                            if(url.scheme == null){
-                                url = URI.create("https://$content")
                             }
 
                             val target = File(targetFolder, name ?: url.path.split("/").last())
