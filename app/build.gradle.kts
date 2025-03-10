@@ -127,17 +127,33 @@ tasks.register<Exec>("packageCustomDmg"){
     dmg.parentFile.deleteRecursively()
     dmg.parentFile.mkdirs()
 
+    val extra = mutableListOf<String>()
+
+    if(!compose.desktop.application.nativeDistributions.macOS.signing.sign.get()) {
+        val content = """
+        run 'xattr -d com.apple.quarantine Processing-${version}.dmg' to remove the quarantine flag
+        """.trimIndent()
+        val instructions = dmg.parentFile.resolve("INSTRUCTIONS.txt")
+        instructions.writeText(content)
+        extra.add("--add-file")
+        extra.add("INSTRUCTIONS.txt")
+        extra.add(instructions.path)
+        extra.add("200")
+        extra.add("25")
+    }
+
     commandLine("brew", "install", "--quiet", "create-dmg")
 
     commandLine("create-dmg",
         "--volname", packageName,
-        "--volicon", rootProject.file("build/macos/processing.icns"),
+        "--volicon", file("macos/volume.icns"),
         "--background", file("macos/background.png"),
         "--icon", "$packageName.app", "200", "200",
         "--window-pos", "200", "200",
         "--window-size", "775", "485",
         "--app-drop-link", "500", "200",
         "--hide-extension", "$packageName.app",
+        *extra.toTypedArray(),
         dmg,
         app
     )
@@ -153,6 +169,7 @@ tasks.register<Exec>("packageCustomMsi"){
         "dotnet",
         "build",
         "/p:Platform=x64",
+        "/p:Version=$version",
         "/p:DefineConstants=\"Version=$version;\""
     )
 }
