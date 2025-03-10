@@ -44,7 +44,7 @@ jobs:
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v3
       - name: Install LXD
-        uses: canonical/setup-lxd@v0.1
+        uses: canonical/setup-lxd@main
       - name: Build with Gradle
         run: ./gradlew packageDistributionForCurrentOS
       - name: Add instructions
