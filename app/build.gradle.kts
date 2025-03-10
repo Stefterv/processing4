@@ -229,8 +229,23 @@ tasks.register<Exec>("packageSnap"){
 
     commandLine("snapcraft")
 }
+tasks.register<Zip>("zipDistributable"){
+    dependsOn("createDistributable")
+    group = "compose desktop"
+
+    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
+    val dir = distributable.destinationDir.get()
+    val packageName = distributable.packageName.get()
+
+    from(dir)
+    archiveBaseName.set(packageName)
+    destinationDirectory.set(dir.file("../").asFile)
+}
 
 afterEvaluate{
+    tasks.named("createDistributable").configure{
+        finalizedBy("zipDistributable")
+    }
     tasks.named("packageDmg").configure{
         dependsOn("packageCustomDmg")
         group = "compose desktop"
