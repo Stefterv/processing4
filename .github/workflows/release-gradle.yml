@@ -113,7 +113,14 @@ jobs:
           ORG_GRADLE_PROJECT_version: ${{ needs.version.outputs.version }}
           ORG_GRADLE_PROJECT_group: ${{ vars.PROCESSING_GROUP }}
 
-      - name: Upload binaries to release
+      - name: Upload portables to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          asset_name: processing-${{ needs.version.outputs.version }}-${{ matrix.os_prefix }}-${{ matrix.arch }}-portable.zip
+          file: app/build/compose/binaries/main/Processing-${{ needs.version.outputs.version }}.zip
+
+      - name: Upload installers to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
