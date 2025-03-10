@@ -21,6 +21,32 @@ jobs:
           # Set outputs for use in later jobs or steps
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+  reference:
+    name: Publish Processing Reference to release
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+    - name: Checkout Website Repository
+      uses: actions/checkout@v4
+      with:
+        repository: processing/processing-website
+    - name: Use Node.js 16
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+    - name: Install dependencies
+      run: npm ci
+    - name: Build
+      run: npm run build
+    - name: Make reference.zip
+      run: npm run zip
+    - name: Upload reference to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        asset_name: processing-${{ needs.version.outputs.version }}-reference.zip
+        file: reference.zip
+
   publish:
     name: Publish Processing Libraries to Maven Central
     runs-on: ubuntu-latest
