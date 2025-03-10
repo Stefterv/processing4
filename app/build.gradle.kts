@@ -164,6 +164,7 @@ tasks.register("generateSnapConfiguration"){
 
     val arch = when (System.getProperty("os.arch")) {
         "amd64", "x86_64" -> "amd64"
+        "aarch64" -> "arm64"
         else -> System.getProperty("os.arch")
     }
 

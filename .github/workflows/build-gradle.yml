@@ -62,5 +62,11 @@ jobs:
             ./app/build/compose/binaries/main/dmg/INSTRUCTIONS_FOR_TESTING.txt
             ./app/build/compose/binaries/main/msi/Processing-*.msi
             ./app/build/compose/binaries/main/deb/processing*.deb
+          retention-days: 1
+      - name: Upload Snap
+        uses: actions/upload-artifact@v4
+        with:
+          name: processing-${{ github.ref_name }}-${{github.sha}}-${{ matrix.os_prefix }}-${{ matrix.arch }}-snap
+          path: |
             ./app/build/compose/binaries/main/processing*.snap
           retention-days: 1
