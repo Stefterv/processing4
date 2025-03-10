@@ -56,4 +56,5 @@ jobs:
             ./app/build/compose/binaries/main/dmg/INSTRUCTIONS_FOR_TESTING.txt
             ./app/build/compose/binaries/main/msi/Processing-*.msi
             ./app/build/compose/binaries/main/deb/processing*.deb
+            ./app/build/compose/binaries/main/processing*.snap
           retention-days: 1

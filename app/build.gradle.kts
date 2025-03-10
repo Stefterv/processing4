@@ -157,6 +157,61 @@ tasks.register<Exec>("packageCustomMsi"){
     )
 }
 
+tasks.register("generateSnapConfiguration"){
+    onlyIf { org.gradle.internal.os.OperatingSystem.current().isLinux }
+    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
+    dependsOn(distributable)
+
+    val arch = when (System.getProperty("os.arch")) {
+        "amd64", "x86_64" -> "amd64"
+        else -> System.getProperty("os.arch")
+    }
+
+    val dir = distributable.destinationDir.get()
+    val content = """
+    name: ${rootProject.name}
+    version: ${rootProject.version}
+    base: core22
+    summary: A creative coding editor
+    description: |
+      Processing is a flexible software sketchbook and a programming language designed for learning how to code.
+    confinement: strict
+    
+    apps:
+      processing:
+        command: opt/processing/bin/Processing
+        desktop: opt/processing/lib/processing-Processing.desktop
+        plugs:
+          - desktop
+          - desktop-legacy
+          - wayland
+          - x11
+    
+    parts:
+      processing:
+        plugin: dump
+        source: deb/processing_$version-1_$arch.deb
+        source-type: deb
+        stage-packages:
+          - openjdk-17-jdk
+        override-prime: |
+          snapcraftctl prime
+          chmod -R +x opt/processing/lib/app/resources/jdk-*
+    """.trimIndent()
+    dir.file("../snapcraft.yaml").asFile.writeText(content)
+}
+
+tasks.register<Exec>("packageSnap"){
+    onlyIf { org.gradle.internal.os.OperatingSystem.current().isLinux }
+    dependsOn("packageDeb", "generateSnapConfiguration")
+    group = "compose desktop"
+
+    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
+    workingDir = distributable.destinationDir.dir("../").get().asFile
+
+    commandLine("snapcraft")
+}
+
 afterEvaluate{
     tasks.named("packageDmg").configure{
         dependsOn("packageCustomDmg")
@@ -167,6 +222,9 @@ afterEvaluate{
         dependsOn("packageCustomMsi")
         group = "compose desktop"
         actions = emptyList()
+    }
+    tasks.named("packageDistributionForCurrentOS").configure {
+        dependsOn("packageSnap")
     }
 }
 
