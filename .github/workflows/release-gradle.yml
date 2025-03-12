@@ -119,6 +119,13 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+      - name: Install Certificates for App Store
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPSTORE_CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.APPSTORE_CERTIFICATES_P12_PASSWORD }}
 
       - name: Install Snapcraft
         if: runner.os == 'Linux'
