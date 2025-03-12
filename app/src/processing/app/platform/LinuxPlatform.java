@@ -33,7 +33,7 @@ import processing.core.PApplet;
 
 
 public class LinuxPlatform extends DefaultPlatform {
-  String homeDir;
+  String homeDir = "~";
 
 
   public void initBase(Base base) {
@@ -98,7 +98,7 @@ public class LinuxPlatform extends DefaultPlatform {
     File configHome = null;
 
     // Check to see if the user has set a different location for their config
-    String configHomeEnv = getenv("XDG_CONFIG_HOME");
+    String configHomeEnv = System.getenv("XDG_CONFIG_HOME");
     if (configHomeEnv != null && !configHomeEnv.isBlank()) {
       configHome = new File(configHomeEnv);
       if (!configHome.exists()) {

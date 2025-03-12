@@ -223,18 +223,21 @@ tasks.register("generateSnapConfiguration"){
         command: opt/processing/bin/Processing
         desktop: opt/processing/lib/processing-Processing.desktop
         environment:
-            LD_LIBRARY_PATH: ${'$'}SNAP/lib:${'$'}LD_LIBRARY_PATH
+            LD_LIBRARY_PATH: ${'$'}SNAPopt/processing/lib/runtime/lib:${'$'}LD_LIBRARY_PATH
         plugs:
           - desktop
           - desktop-legacy
           - wayland
           - x11
+          - network
     
     parts:
       processing:
         plugin: dump
         source: deb/processing_$version-1_$snaparch.deb
         source-type: deb
+        stage-packages:
+          - openjdk-17-jdk
         override-prime: |
           snapcraftctl prime
           chmod -R +x opt/processing/lib/app/resources/jdk-*
