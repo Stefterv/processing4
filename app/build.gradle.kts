@@ -50,7 +50,7 @@ compose.desktop {
 
         nativeDistributions{
             modules("jdk.jdi", "java.compiler", "jdk.accessibility")
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Pkg)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Processing"
 
             macOS{
@@ -162,6 +162,22 @@ tasks.register<Exec>("packageCustomDmg"){
         app
     )
 }
+tasks.register<Exec>("packagePkg"){
+    dependsOn("createDistributable")
+    group = "compose desktop"
+    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
+    val app = distributable.destinationDir.get().file("${distributable.packageName.get()}.app").asFile
+    val target = app.parentFile.parentFile.resolve("pkg/${distributable.packageName.get()}-$version.pkg")
+    target.parentFile.mkdirs()
+
+    commandLine("pkgbuild",
+        "--install-location", "/Applications",
+        "--identifier", "${rootProject.group}.app",
+        "--version", version,
+        "--component", app,
+        target
+    )
+}
 
 tasks.register<Exec>("packageCustomMsi"){
     onlyIf { org.gradle.internal.os.OperatingSystem.current().isWindows }
@@ -205,6 +221,8 @@ tasks.register("generateSnapConfiguration"){
       processing:
         command: opt/processing/bin/Processing
         desktop: opt/processing/lib/processing-Processing.desktop
+        environment:
+            LD_LIBRARY_PATH: ${'$'}SNAP/lib:${'$'}LD_LIBRARY_PATH
         plugs:
           - desktop
           - desktop-legacy
@@ -216,12 +234,9 @@ tasks.register("generateSnapConfiguration"){
         plugin: dump
         source: deb/processing_$version-1_$snaparch.deb
         source-type: deb
-        stage-packages:
-          - openjdk-17-jdk
         override-prime: |
           snapcraftctl prime
           chmod -R +x opt/processing/lib/app/resources/jdk-*
-          rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/cacerts
     """.trimIndent()
     dir.file("../snapcraft.yaml").asFile.writeText(content)
 }
@@ -249,14 +264,12 @@ tasks.register<Zip>("zipDistributable"){
 }
 
 afterEvaluate{
-    tasks.named("createDistributable").configure{
-        finalizedBy("zipDistributable")
-    }
     tasks.named("packageDmg").configure{
         dependsOn("packageCustomDmg")
         group = "compose desktop"
         actions = emptyList()
     }
+
     tasks.named("packageMsi").configure{
         dependsOn("packageCustomMsi")
         group = "compose desktop"
@@ -268,7 +281,7 @@ afterEvaluate{
         ){
             dependsOn("notarizeDmg")
         }
-        dependsOn("packageSnap")
+        dependsOn("packageSnap", "zipDistributable", "packagePkg")
     }
 }
 
