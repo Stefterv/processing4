@@ -170,3 +170,16 @@ jobs:
         run: snapcraft upload app/build/compose/binaries/main/${{ matrix.binary }}.${{ matrix.extension }}
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.PROCESSING_SNAPCRAFT_TOKEN }}
+
+      - name: Upload pkg to App Store
+        if: runner.os == 'macOS'
+        run: xcrun altool \
+          --upload-package app/build/compose/binaries/main/pkg/Processing-${{ needs.version.outputs.version }}.pkg \
+          --type macos \
+          --asc-public-id ${{ secrets.PROCESSING_STORE_PUBLIC_ID }} \
+          --apple-id ${{ secrets.PROCESSING_STORE_APP_ID }} \
+          --bundle-id ${{ vars.GRADLE_GROUP }}.app \
+          --bundle-short-version-string ${{ needs.version.outputs.version }} \
+          --bundle-version ${{ needs.version.outputs.version }} \
+          --username ${{ secrets.PROCESSING_APPLE_ID }} \
+          --password  ${{ secrets.PROCESSING_APP_PASSWORD }}
