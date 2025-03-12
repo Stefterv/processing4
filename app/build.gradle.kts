@@ -4,6 +4,9 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.Download
 import org.jetbrains.kotlin.fir.scopes.impl.overrides
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 plugins{
     id("java")
@@ -47,7 +50,7 @@ compose.desktop {
 
         nativeDistributions{
             modules("jdk.jdi", "java.compiler", "jdk.accessibility")
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Pkg)
             packageName = "Processing"
 
             macOS{
@@ -388,7 +391,8 @@ tasks.register<Copy>("renameWindres") {
 tasks.register("signResources"){
     onlyIf { org.gradle.internal.os.OperatingSystem.current().isMacOsX }
     group = "compose desktop"
-    dependsOn("prepareAppResources")
+    dependsOn("renameWindres")
+    finalizedBy("prepareAppResources")
 
     val resourcesPath = composeResources("")
 
@@ -415,6 +419,7 @@ tasks.register("signResources"){
                 from(zipTree(file))
                 into(tempDir)
             }
+            file.delete()
             jars.add(tempDir)
         }
         fileTree(resourcesPath){
@@ -428,7 +433,6 @@ tasks.register("signResources"){
             exclude("*.so")
             exclude("*.dll")
         }.forEach{ file ->
-            println("signign $file")
             exec {
                 commandLine("codesign", "--timestamp", "--force", "--deep", "--sign", "Developer ID Application", file)
             }
@@ -436,7 +440,24 @@ tasks.register("signResources"){
     }
     doLast {
         jars.forEach { file ->
-            zipTo(file.resolve(file.nameWithoutExtension), file)
+            FileOutputStream(File(file.parentFile, file.nameWithoutExtension)).use { fos ->
+                ZipOutputStream(fos).use { zos ->
+                    file.walkTopDown().forEach { fileEntry ->
+                        if (fileEntry.isFile) {
+                            // Calculate the relative path for the zip entry
+                            val zipEntryPath = fileEntry.relativeTo(file).path
+                            val entry = ZipEntry(zipEntryPath)
+                            zos.putNextEntry(entry)
+
+                            // Copy file contents to the zip
+                            fileEntry.inputStream().use { input ->
+                                input.copyTo(zos)
+                            }
+                            zos.closeEntry()
+                        }
+                    }
+                }
+            }
 
             file.deleteRecursively()
         }
@@ -457,7 +478,6 @@ afterEvaluate {
             "includeJavaModeResources",
             "renameWindres"
         )
-        finalizedBy()
     }
     tasks.register("setExecutablePermissions") {
         description = "Sets executable permissions on binaries in Processing.app resources"
