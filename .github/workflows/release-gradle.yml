@@ -144,6 +144,7 @@ jobs:
           ORG_GRADLE_PROJECT_version: ${{ needs.version.outputs.version }}
           ORG_GRADLE_PROJECT_group: ${{ vars.GRADLE_GROUP }}
           ORG_GRADLE_PROJECT_revision: ${{ needs.version.outputs.revision }}
+          ORG_GRADLE_PROJECT_compose.desktop.verbose: true
           ORG_GRADLE_PROJECT_compose.desktop.mac.sign: ${{ secrets.PROCESSING_SIGNING }}
           ORG_GRADLE_PROJECT_compose.desktop.mac.signing.identity: ${{ secrets.PROCESSING_SIGNING_IDENTITY }}
           ORG_GRADLE_PROJECT_compose.desktop.mac.notarization.appleID: ${{ secrets.PROCESSING_APPLE_ID }}
@@ -170,7 +171,3 @@ jobs:
         run: snapcraft upload app/build/compose/binaries/main/${{ matrix.binary }}.${{ matrix.extension }}
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.PROCESSING_SNAPCRAFT_TOKEN }}
-
-      - name: Upload pkg to App Store
-        if: runner.os == 'macOS'
-        run: xcrun altool --upload-package app/build/compose/binaries/main/pkg/Processing-${{ needs.version.outputs.version }}.pkg --type macos --asc-public-id ${{ secrets.PROCESSING_STORE_PUBLIC_ID }} --apple-id ${{ secrets.PROCESSING_STORE_APP_ID }} --bundle-id ${{ vars.GRADLE_GROUP }}.app --bundle-short-version-string ${{ needs.version.outputs.version }} --bundle-version ${{ needs.version.outputs.version }} --username ${{ secrets.PROCESSING_APPLE_ID }} --password  ${{ secrets.PROCESSING_APP_PASSWORD }}

@@ -50,7 +50,7 @@ compose.desktop {
 
         nativeDistributions{
             modules("jdk.jdi", "java.compiler", "jdk.accessibility")
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Pkg)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Processing"
 
             macOS{
