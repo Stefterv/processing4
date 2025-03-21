@@ -30,6 +30,7 @@ class ShareTest{
                 callme();
             }
         """.trimIndent())
+
         val secondaryFile = tempDir.resolve("secondary.pde")
         secondaryFile.writeText("""
             void callme(){
@@ -39,6 +40,6 @@ class ShareTest{
 
         val sketch = Sketch(mainFile.toString(), mode)
         val url = Share.convertSketchToBase64URL(sketch)
-        assertEquals("https://processing.org", url.toString())
+        assertEquals("pde://sketch/base64/dm9pZCBzZXR1cCgpewogICAgc2l6ZSg0MDAsIDQwMCk7Cn0Kdm9pZCBkcmF3KCl7CiAgICBiYWNrZ3JvdW5kKDI1NSk7CiAgICBjYWxsbWUoKTsKfQ==?pde=secondary.pde:dm9pZCBjYWxsbWUoKXsKICAgIHByaW50bG4oIkhlbGxvIFdvcmxkIik7Cn0=", url)
     }
 }
