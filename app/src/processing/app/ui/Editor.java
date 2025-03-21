@@ -65,6 +65,7 @@ import processing.app.SketchException;
 import processing.app.contrib.ContributionManager;
 import processing.app.laf.PdeMenuItemUI;
 import processing.app.syntax.*;
+import processing.app.tools.Share;
 import processing.core.*;
 
 
@@ -891,6 +892,12 @@ public abstract class Editor extends JFrame implements RunnerListener {
       }
     });
     sketchMenu.add(item);
+
+    var share = new JMenuItem(Language.text("menu.sketch.share"));
+    share.addActionListener(e -> {
+      Share.sketch(sketch);
+    });
+    sketchMenu.add(share);
 
     //noinspection ConstantConditions
     if (runItems != null && runItems.length != 0) {
