@@ -28,7 +28,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
 
         // TODO: Add to tests
         project.dependencies.add("implementation", "org.processing:core:4.4.0")
-        // TODO: Add tests
+        // TODO: Add tests to test if code jars are working
         project.dependencies.add("implementation", project.fileTree("src").apply { include("**/code/*.jar") })
 
         // Base JOGL and Gluegen dependencies
@@ -113,8 +113,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             val outputDirectory = project.layout.buildDirectory.file( "generated/pde/" + sourceSet.name).get().asFile
             sourceSet.java.srcDir(outputDirectory)
 
-            // TODO: Support multiple sketches?
-
             val taskName = sourceSet.getTaskName("preprocess", "PDE")
             project.tasks.register(taskName, ProcessingTask::class.java) { task ->
                 task.description = "Processes the ${sourceSet.name} PDE"
@@ -127,6 +125,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             ) { task -> task.dependsOn(taskName) }
         }
 
+        // TODO: get this data from code used within the editor
         var settingsFolder = File(System.getProperty("user.home"),".processing")
         val osName = System.getProperty("os.name").lowercase()
         if (osName.contains("win")) {
@@ -147,6 +146,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
 
         val sketchbook = prefs.getProperty("sketchbook.path.four")
 
+        // TODO: Move to ProcessingTask after reading the libs from the sketch
         File(sketchbook, "libraries").listFiles { file -> file.isDirectory }?.forEach{
             project.dependencies.add("implementation", project.fileTree(it).apply { include("**/*.jar") })
         }

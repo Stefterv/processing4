@@ -27,7 +27,7 @@ abstract class ProcessingTask : SourceTask() {
     fun execute(inputChanges: InputChanges) {
         val files: MutableSet<File> = HashSet()
         if (inputChanges.isIncremental) {
-            var rebuildRequired = true
+            var rebuildRequired = false
             for (fileChange: FileChange in inputChanges.getFileChanges(stableSources)) {
                 if (fileChange.fileType == FileType.FILE) {
                     if (fileChange.changeType == ChangeType.REMOVED) {
