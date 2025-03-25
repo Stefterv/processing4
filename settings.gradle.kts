@@ -6,6 +6,7 @@ include(
     "java",
     "java:preprocessor",
     "java:gradle",
+    "java:android",
     "java:libraries:dxf",
     "java:libraries:io",
     "java:libraries:net",

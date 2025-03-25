@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/processing.app.commonTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/processing.app.commonTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/processing.app.desktopMain.iml" filepath="$PROJECT_DIR$/.idea/modules/app/processing.app.desktopMain.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/processing.app.desktopTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/processing.app.desktopTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/java/android/processing.java.android.main.iml" filepath="$PROJECT_DIR$/.idea/modules/java/android/processing.java.android.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/build/macos/appbundler/processing4-appbundler.iml" filepath="$PROJECT_DIR$/build/macos/appbundler/processing4-appbundler.iml" />
       <module fileurl="file://$PROJECT_DIR$/core/methods/processing4-core-preproc.iml" filepath="$PROJECT_DIR$/core/methods/processing4-core-preproc.iml" />
       <module fileurl="file://$PROJECT_DIR$/java/libraries/javafx/processing4-javafx.iml" filepath="$PROJECT_DIR$/java/libraries/javafx/processing4-javafx.iml" />
