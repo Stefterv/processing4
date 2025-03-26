@@ -1,6 +1,10 @@
 plugins{
     id("org.processing.java.android")
 }
+repositories{
+    google()
+    mavenCentral()
+}
 buildscript{
     repositories{
         google()

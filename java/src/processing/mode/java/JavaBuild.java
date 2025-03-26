@@ -43,6 +43,7 @@ import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.data.StringList;
 import processing.data.XML;
+import processing.mode.java.gradle.GradleRunner;
 import processing.mode.java.preproc.ImportStatement;
 import processing.mode.java.preproc.PdePreprocessor;
 import processing.mode.java.preproc.PreprocessorResult;
@@ -109,6 +110,7 @@ public class JavaBuild {
   public String build(File srcFolder, File binFolder, boolean sizeWarning) throws SketchException {
     this.srcFolder = srcFolder;
     this.binFolder = binFolder;
+    if(true) return GradleRunner.build(sketch);
 
     // run the preprocessor
     PreprocessorResult result = preprocess(srcFolder, sizeWarning);

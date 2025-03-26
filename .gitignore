@@ -123,3 +123,4 @@ java/build/
 /java/android/build
 /java/android/example/.processing
 /java/android/example/build
+local.properties

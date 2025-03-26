@@ -1,11 +1,13 @@
 plugins {
     id("java")
+    kotlin("jvm") version libs.versions.kotlin
 }
 
 repositories{
     mavenCentral()
     google()
     maven { url = uri("https://jogamp.org/deployment/maven") }
+    maven { url = uri("https://repo.gradle.org/gradle/libs-releases") }
 }
 
 sourceSets{
@@ -13,6 +15,9 @@ sourceSets{
         java{
             srcDirs("src")
             exclude("processing/mode/java/preproc/**")
+        }
+        kotlin{
+            srcDirs("src")
         }
     }
     test{
@@ -38,6 +43,11 @@ dependencies{
 
     testImplementation(libs.junit)
     testImplementation(libs.mockito)
+
+
+    implementation("org.gradle:gradle-tooling-api:8.12")
+    // The tooling API need an SLF4J implementation available at runtime, replace this with any other implementation
+    runtimeOnly("org.slf4j:slf4j-simple:1.7.10")
 }
 
 tasks.compileJava{
