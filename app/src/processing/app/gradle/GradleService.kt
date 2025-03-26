@@ -75,6 +75,28 @@ class GradleService(val editor: Editor) {
         cancel.cancel()
     }
 
+    fun export(){
+        val connection = connection ?: return
+        if(!preparing) preparation?.cancel()
+
+        run?.cancel()
+        run = CoroutineScope(Dispatchers.IO).launch {
+            running.value = true
+            preparation?.join()
+            cancel.cancel()
+            cancel = GradleConnector.newCancellationTokenSource()
+            try {
+                connection.newSketchBuild()
+                    .forTasks("runDistributable")
+                    .withCancellationToken(cancel.token())
+                    .run()
+            }catch (e: Exception){
+                Messages.log(e.toString())
+            }
+        }
+        run?.invokeOnCompletion { running.value = run?.isActive ?: false }
+    }
+
     fun startService(){
         Messages.log("Starting Gradle service at ${folder}")
 
@@ -151,7 +173,12 @@ class GradleService(val editor: Editor) {
                     finishedTasks.add(name)
                 }
             })
-//            .setStandardOutput(System.out)
+            .apply {
+                if(Base.DEBUG) {
+                    setStandardError(System.err)
+                    setStandardOutput(System.out)
+                }
+            }
 //            .setJavaHome(Platform.getJavaHome())
     }
 }

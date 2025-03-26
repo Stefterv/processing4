@@ -488,6 +488,10 @@ public class JavaEditor extends Editor {
    * Handler for Sketch → Export Application
    */
   public void handleExportApplication() {
+    if(true){
+        this.service.export();
+        return;
+    }
     if (handleExportCheckModified()) {
       statusNotice(Language.text("export.notice.exporting"));
       ExportPrompt ep = new ExportPrompt(this, () -> {
@@ -636,6 +640,10 @@ public class JavaEditor extends Editor {
   }
 
   protected void handleLaunch(boolean present, boolean tweak) {
+    if(true){
+      this.service.run();
+      return;
+    }
     prepareRun();
     toolbar.activateRun();
     synchronized (runtimeLock) {
