@@ -17,7 +17,8 @@ import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-
+// TODO: Embed the core, gradle plugin, and preprocessor in a custom .m2 repository
+// Right now the gradle service only works if you publish those to the local maven repository
 class GradleService(val editor: Editor) {
     val availableTasks = mutableStateListOf<String>()
     val finishedTasks = mutableStateListOf<String>()
@@ -54,20 +55,20 @@ class GradleService(val editor: Editor) {
 
         run?.cancel()
         run = CoroutineScope(Dispatchers.IO).launch {
+            running.value = true
             preparation?.join()
             cancel.cancel()
             cancel = GradleConnector.newCancellationTokenSource()
-            connection.newSketchBuild()
-                .forTasks("run")
-                .withCancellationToken(cancel.token())
-                .run()
+            try {
+                connection.newSketchBuild()
+                    .forTasks("run")
+                    .withCancellationToken(cancel.token())
+                    .run()
+            }catch (e: Exception){
+                Messages.log(e.toString())
+            }
         }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            running.value = true
-            run?.join()
-            running.value = false
-        }
+        run?.invokeOnCompletion { running.value = run?.isActive ?: false }
     }
 
     fun stop(){
@@ -82,6 +83,8 @@ class GradleService(val editor: Editor) {
             .connect()
 
         // TODO: recreate connection if sketch folder changes
+
+        // TODO: Run the sketch with the latest changes
 
         SwingUtilities.invokeLater {
             editor.sketch.code.forEach {
@@ -109,10 +112,13 @@ class GradleService(val editor: Editor) {
 
     fun ProjectConnection.newSketchBuild(): BuildLauncher{
         finishedTasks.clear()
+        // TODO: Research if we can generate these programmatically
+        // Ideally they would not be placed into the sketch folder
 
         val buildGradle = folder.resolve("build.gradle.kts")
         if(!buildGradle.exists()){
             Messages.log("build.gradle.kts not found in ${folder}, creating one")
+            // TODO: Allow for other plugins to be registered
             val content = """
                     plugins{
                         id("processing.java.gradle") version "${Base.getVersionName()}"

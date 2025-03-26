@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import processing.app.LocalPreferences
 import processing.app.PreferencesProvider
 import java.io.InputStream
-import java.util.Properties
+import java.util.*
 
 
 class Theme(themeFile: String? = "") : Properties() {
@@ -70,6 +70,9 @@ fun String.toColorInt(): Int {
             throw IllegalArgumentException("Unknown color")
         }
         return color.toInt()
+    }
+    if (this.startsWith("0x")) {
+        return this.substring(2).toInt(16)
     }
     throw IllegalArgumentException("Unknown color")
 }
