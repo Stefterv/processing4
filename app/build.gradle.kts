@@ -120,6 +120,9 @@ dependencies {
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.junitJupiter)
     testImplementation(libs.junitJupiterParams)
+
+    implementation(gradleApi())
+    runtimeOnly(libs.slf4j.simple)
 }
 
 tasks.test {

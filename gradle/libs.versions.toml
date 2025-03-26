@@ -33,6 +33,8 @@ kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ver
 kotlinComposePlugin = { module = "org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin", version.ref = "kotlin" }
 markdown = { module = "com.mikepenz:multiplatform-markdown-renderer-m2", version = "0.31.0" }
 markdownJVM = { module = "com.mikepenz:multiplatform-markdown-renderer-jvm", version = "0.31.0" }
+gradle-tooling-api = { module = "org.gradle:gradle-tooling-api", version = "8.12" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version = "1.7.10" }
 
 [plugins]
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
