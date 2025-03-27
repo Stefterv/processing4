@@ -49,14 +49,18 @@ compose.desktop {
     application {
         mainClass = "processing.app.ui.Start"
 
-        jvmArgs(*listOf(
-            Pair("processing.version", rootProject.version),
-            Pair("processing.revision", findProperty("revision") ?: Int.MAX_VALUE),
-            Pair("processing.contributions.source", "https://contributions.processing.org/contribs"),
-            Pair("processing.download.page", "https://processing.org/download/"),
-            Pair("processing.download.latest", "https://processing.org/download/latest.txt"),
-            Pair("processing.tutorials", "https://processing.org/tutorials/"),
-        ).map { "-D${it.first}=${it.second}" }.toTypedArray())
+
+        val variables = mapOf(
+            "processing.group" to (rootProject.group.takeIf { it != "" } ?: "processing"),
+            "processing.version" to rootProject.version,
+            "processing.revision" to (findProperty("revision") ?: Int.MAX_VALUE),
+            "processing.contributions.source" to "https://contributions.processing.org/contribs",
+            "processing.download.page" to "https://processing.org/download/",
+            "processing.download.latest" to "https://processing.org/download/latest.txt",
+            "processing.tutorials" to "https://processing.org/tutorials/",
+        )
+
+        jvmArgs(*variables.entries.map { "-D${it.key}=${it.value}" }.toTypedArray())
 
         nativeDistributions{
             modules("jdk.jdi", "java.compiler", "jdk.accessibility", "java.management.rmi")

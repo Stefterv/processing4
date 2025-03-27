@@ -134,20 +134,34 @@ class GradleService(val editor: Editor) {
 
 
 
-    fun ProjectConnection.newSketchBuild(): BuildLauncher{
+    private fun ProjectConnection.newSketchBuild(): BuildLauncher{
         finishedTasks.clear()
-        // TODO: Research if we can generate these programmatically
-        // Ideally they would not be placed into the sketch folder
 
-        val initGradle = kotlin.io.path.createTempDirectory().resolve("init.gradle.kts").apply {
+        val workingDir = kotlin.io.path.createTempDirectory()
+        val group = System.getProperty("processing.group", "org.processing")
+
+        val variables = mapOf(
+            "group" to group,
+            "version" to Base.getVersionName(),
+            "sketchFolder" to folder.absolutePath,
+            "workingDir" to workingDir.toAbsolutePath().toString(),
+            "settings" to Platform.getSettingsFolder().absolutePath.toString()
+        )
+
+        val initGradle = workingDir.resolve("init.gradle.kts").apply {
             val content = """
                 beforeSettings{
                     pluginManagement {
                         repositories {
                             maven { url = uri("${Platform.getContentFile("repository").absolutePath}") }
-                            //mavenLocal()
                             gradlePluginPortal()
                         }
+                    }
+                }
+                allprojects{
+                    repositories {
+                        maven { url = uri("${Platform.getContentFile("repository").absolutePath}") }
+                        mavenCentral()
                     }
                 }
             """.trimIndent()
@@ -161,12 +175,13 @@ class GradleService(val editor: Editor) {
             Messages.log("build.gradle.kts not found in ${folder}, creating one")
             // TODO: Allow for other plugins to be registered
             // TODO: Allow for the whole configuration to be overridden
+            // TODO: Move this to java mode
             val content = """
                     // Managed by: Processing ${Base.getVersionName()}
                     // If you delete this comment Processing will no longer update the build scripts
 
                     plugins{
-                        id("processing.java.gradle") version "${Base.getVersionName()}"
+                        id("org.processing.gradle") version "${Base.getVersionName()}"
                     }
                 """.trimIndent()
             buildGradle.writeText(content)
@@ -174,7 +189,10 @@ class GradleService(val editor: Editor) {
 
         return this.newBuild()
 //            .setJavaHome(Platform.getJavaHome())
-            .withArguments("--init-script", initGradle.toAbsolutePath().toString())
+            .withArguments(
+                "--init-script", initGradle.toAbsolutePath().toString(),
+                *variables.entries.map { "-Pprocessing.${it.key}=${it.value}" }.toTypedArray()
+            )
             .addProgressListener(ProgressListener { event ->
                 val name = event.descriptor.name
                 if(event is TaskStartEvent) {

@@ -17,17 +17,23 @@ import javax.inject.Inject
 
 class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFactory) : Plugin<Project> {
     override fun apply(project: Project) {
+        val isProcessing = project.findProperty("processing.version") != null
+        val processingVersion = project.findProperty("processing.version") as String? ?: "4.0.0"
+        val processingGroup = project.findProperty("processing.group") as String? ?: "org.processing"
+
         project.plugins.apply(JavaPlugin::class.java)
 
-        // TODO: Only set the build directory when run from the Processing plugin
-        project.layout.buildDirectory.set(project.layout.projectDirectory.dir(".processing"))
+        if(isProcessing){
+            project.layout.buildDirectory.set(File(project.findProperty("processing.workingDir") as String))
+            project.tasks.findByName("wrapper")?.enabled = false
+        }
 
         project.plugins.apply("org.jetbrains.compose")
         project.plugins.apply("org.jetbrains.kotlin.jvm")
         project.plugins.apply("org.jetbrains.kotlin.plugin.compose")
 
         // TODO: Add to tests
-        project.dependencies.add("implementation", "org.processing:core:4.4.0")
+        project.dependencies.add("implementation", "$processingGroup:core:${processingVersion}")
         // TODO: Add tests to test if code jars are working
         project.dependencies.add("implementation", project.fileTree("src").apply { include("**/code/*.jar") })
 
@@ -66,8 +72,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 application.nativeDistributions.modules("java.management")
             }
         }
-        // TODO: Also only do within Processing
-        project.tasks.findByName("wrapper")?.enabled = false
 
         project.tasks.create("sketch").apply {
             group = "processing"
