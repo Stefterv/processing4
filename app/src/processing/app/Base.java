@@ -67,7 +67,7 @@ public class Base {
    */
   static public boolean DEBUG = System.getenv().containsKey("DEBUG");
 
-  static public boolean GRADLE = false;
+  static public boolean GRADLE = true;
 
   /** True if running via Commander. */
   static private boolean commandLine;

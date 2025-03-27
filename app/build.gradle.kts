@@ -128,7 +128,6 @@ dependencies {
     testImplementation(libs.junitJupiterParams)
 
     implementation(gradleApi())
-    runtimeOnly(libs.slf4j.simple)
 }
 
 tasks.test {

@@ -23,6 +23,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val processingVersion = project.findProperty("processing.version") as String? ?: "4.3.4"
         val processingGroup = project.findProperty("processing.group") as String? ?: "org.processing"
         val workingDir = project.findProperty("processing.workingDir") as String?
+        val debugPort = project.findProperty("processing.debugPort") as String?
 
         // Grab the settings from the most likely location
         var settingsFolder = (project.findProperty("processing.settings") as String?)?.let { File(it) }
@@ -111,6 +112,9 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 // Set the class to be executed initially
                 application.mainClass = sketchName
                 application.nativeDistributions.modules("java.management")
+                if(debugPort != null) {
+                    application.jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$debugPort")
+                }
             }
         }
 

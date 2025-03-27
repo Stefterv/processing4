@@ -85,7 +85,7 @@ class Toolbar(val editor: Editor) {
                 val color = LocalContentColor.current
                 Fading(visible = isRunning) {
                     CircularProgressIndicator(
-                        progress = finished.count().toFloat() / (available.count() - 1),
+                        //progress = finished.count().toFloat() / (available.count() - 1),
                         color = color
                     )
                 }

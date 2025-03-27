@@ -2,6 +2,10 @@ package processing.app.gradle
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import com.sun.jdi.Bootstrap
+import com.sun.jdi.VirtualMachine
+import com.sun.jdi.VirtualMachineManager
+import com.sun.jdi.connect.AttachingConnector
 import kotlinx.coroutines.*
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
@@ -19,12 +23,12 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import kotlin.io.path.writeText
 
-// TODO: Embed the core, gradle plugin, and preprocessor in a custom .m2 repository
-// Right now the gradle service only works if you publish those to the local maven repository
 class GradleService(val editor: Editor) {
     val availableTasks = mutableStateListOf<String>()
     val finishedTasks = mutableStateListOf<String>()
     val running = mutableStateOf(false)
+    var vm: VirtualMachine? = null
+    val debugPort = (30000..60000).random()
 
     private var connection: ProjectConnection? = null
     private var preparation: Job? = null
@@ -35,7 +39,9 @@ class GradleService(val editor: Editor) {
 
     val folder: File get() = editor.sketch.folder
 
+
     fun prepare(){
+        Messages.log("Preparing sketch")
         if(preparing) return
         preparation?.cancel()
         preparation = CoroutineScope(Dispatchers.IO).launch {
@@ -44,60 +50,45 @@ class GradleService(val editor: Editor) {
             preparing = true
 
             connection.newSketchBuild()
-                .forTasks("build")
+                .forTasks("jar")
                 .run()
 
             preparing = false
+            Messages.log("Preparation finished")
         }
     }
 
     fun run(){
         val connection = connection ?: return
-        if(!preparing) preparation?.cancel()
-
-        run?.cancel()
-        run = CoroutineScope(Dispatchers.IO).launch {
-            running.value = true
-            preparation?.join()
-            cancel.cancel()
-            cancel = GradleConnector.newCancellationTokenSource()
-            try {
-                connection.newSketchBuild()
-                    .forTasks("run")
-                    .withCancellationToken(cancel.token())
-                    .run()
-            }catch (e: Exception){
-                Messages.log(e.toString())
-            }
+        Messages.log("Running sketch")
+        startRun {
+            connection.newSketchBuild()
+                .addDebugging()
+                .forTasks("run")
+                .withCancellationToken(cancel.token())
+                .run()
+            Messages.log("Running finished")
         }
-        run?.invokeOnCompletion { running.value = run?.isActive ?: false }
+
+    }
+
+    fun export(){
+        val connection = connection ?: return
+        Messages.log("Exporting sketch")
+        startRun {
+            connection.newSketchBuild()
+                .forTasks("runDistributable")
+                .withCancellationToken(cancel.token())
+                .run()
+            Messages.log("Exporting finished")
+        }
     }
 
     fun stop(){
         cancel.cancel()
     }
 
-    fun export(){
-        val connection = connection ?: return
-        if(!preparing) preparation?.cancel()
 
-        run?.cancel()
-        run = CoroutineScope(Dispatchers.IO).launch {
-            running.value = true
-            preparation?.join()
-            cancel.cancel()
-            cancel = GradleConnector.newCancellationTokenSource()
-            try {
-                connection.newSketchBuild()
-                    .forTasks("runDistributable")
-                    .withCancellationToken(cancel.token())
-                    .run()
-            }catch (e: Exception){
-                Messages.log(e.toString())
-            }
-        }
-        run?.invokeOnCompletion { running.value = run?.isActive ?: false }
-    }
 
     fun startService(){
         Messages.log("Starting Gradle service at ${folder}")
@@ -107,8 +98,6 @@ class GradleService(val editor: Editor) {
             .connect()
 
         // TODO: recreate connection if sketch folder changes
-
-        // TODO: Run the sketch with the latest changes
 
         SwingUtilities.invokeLater {
             editor.sketch.code.forEach {
@@ -129,11 +118,37 @@ class GradleService(val editor: Editor) {
 
             // TODO: Attach listener if new tab is created
         }
-
-        // TODO: Attach a debugger (to gradle, and the running sketch)
     }
 
+    private fun startRun(action: () -> Unit){
+        running.value = true
+        run?.cancel()
+        run = CoroutineScope(Dispatchers.IO).launch {
+            preparation?.join()
 
+            cancel.cancel()
+            cancel = GradleConnector.newCancellationTokenSource()
+            action()
+        }
+        run?.invokeOnCompletion { running.value = run?.isActive ?: false }
+    }
+
+    private fun BuildLauncher.addDebugging(): BuildLauncher{
+        this.addProgressListener(ProgressListener { event ->
+            if(event !is TaskStartEvent) return@ProgressListener
+            if(event.descriptor.name != ":run") return@ProgressListener
+
+            Messages.log("Running sketch")
+            val connector = Bootstrap.virtualMachineManager().allConnectors()
+                .firstOrNull { it.name() == "com.sun.jdi.SocketAttach" }
+                    as AttachingConnector?
+                ?: return@ProgressListener
+            val args = connector.defaultArguments()
+            args["port"]?.setValue(debugPort.toString())
+            vm = connector.attach(args)
+        })
+        return this
+    }
 
 
     private fun ProjectConnection.newSketchBuild(): BuildLauncher{
@@ -160,7 +175,8 @@ class GradleService(val editor: Editor) {
             "sketchFolder" to folder.absolutePath,
             "workingDir" to workingDir.toAbsolutePath().toString(),
             "settings" to Platform.getSettingsFolder().absolutePath.toString(),
-            "unsaved" to unsaved.joinToString(",")
+            "unsaved" to unsaved.joinToString(","),
+            "debugPort" to debugPort.toString()
         )
         val repository = Platform.getContentFile("repository").absolutePath
 
@@ -204,9 +220,13 @@ class GradleService(val editor: Editor) {
                 """.trimIndent()
             buildGradle.writeText(content)
         }
+        val settingsGradle = folder.resolve("settings.gradle.kts")
+        if(!settingsGradle.exists()) {
+            settingsGradle.createNewFile()
+        }
 
         return this.newBuild()
-            .setJavaHome(Platform.getJavaHome())
+//            .setJavaHome(Platform.getJavaHome())
             .withArguments(
                 "--init-script", initGradle.toAbsolutePath().toString(),
                 *variables.entries.map { "-Pprocessing.${it.key}=${it.value}" }.toTypedArray()
