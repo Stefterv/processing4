@@ -301,8 +301,14 @@ afterEvaluate{
         }
         dependsOn("packageSnap", "zipDistributable")
     }
+    tasks.named("prepareAppResources").configure {
+        dependsOn(
+            ":core:publishAllPublicationsToAppRepository",
+            ":java:gradle:publishAllPublicationsToAppRepository",
+            ":java:preprocessor:publishAllPublicationsToAppRepository"
+        )
+    }
 }
-
 
 // LEGACY TASKS
 // Most of these are shims to be compatible with the old build system

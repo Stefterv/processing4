@@ -35,6 +35,15 @@ dependencies{
     implementation(libs.antlr4Runtime)
 }
 
+publishing{
+    repositories{
+        maven {
+            name = "App"
+            url = uri(project(":app").layout.buildDirectory.dir("resources-bundled/common/repository").get().asFile.absolutePath)
+        }
+    }
+}
+
 mavenPublishing{
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()

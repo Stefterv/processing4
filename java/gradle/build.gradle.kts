@@ -30,5 +30,9 @@ gradlePlugin{
 publishing{
     repositories{
         mavenLocal()
+        maven {
+            name = "App"
+            url = uri(project(":app").layout.buildDirectory.dir("resources-bundled/common/repository").get().asFile.absolutePath)
+        }
     }
 }

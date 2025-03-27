@@ -11,11 +11,13 @@ import org.gradle.tooling.events.task.TaskFinishEvent
 import org.gradle.tooling.events.task.TaskStartEvent
 import processing.app.Base
 import processing.app.Messages
+import processing.app.Platform
 import processing.app.ui.Editor
 import java.io.File
 import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
+import kotlin.io.path.writeText
 
 // TODO: Embed the core, gradle plugin, and preprocessor in a custom .m2 repository
 // Right now the gradle service only works if you publish those to the local maven repository
@@ -137,11 +139,32 @@ class GradleService(val editor: Editor) {
         // TODO: Research if we can generate these programmatically
         // Ideally they would not be placed into the sketch folder
 
+        val initGradle = kotlin.io.path.createTempDirectory().resolve("init.gradle.kts").apply {
+            val content = """
+                beforeSettings{
+                    pluginManagement {
+                        repositories {
+                            maven { url = uri("${Platform.getContentFile("repository").absolutePath}") }
+                            //mavenLocal()
+                            gradlePluginPortal()
+                        }
+                    }
+                }
+            """.trimIndent()
+
+            writeText(content)
+        }
+
         val buildGradle = folder.resolve("build.gradle.kts")
+        // TODO: Manage script if the comment exists
         if(!buildGradle.exists()){
             Messages.log("build.gradle.kts not found in ${folder}, creating one")
             // TODO: Allow for other plugins to be registered
+            // TODO: Allow for the whole configuration to be overridden
             val content = """
+                    // Managed by: Processing ${Base.getVersionName()}
+                    // If you delete this comment Processing will no longer update the build scripts
+
                     plugins{
                         id("processing.java.gradle") version "${Base.getVersionName()}"
                     }
@@ -149,21 +172,9 @@ class GradleService(val editor: Editor) {
             buildGradle.writeText(content)
         }
 
-        val settingsGradle = folder.resolve("settings.gradle.kts")
-        if(!settingsGradle.exists()){
-            Messages.log("settings.gradle.kts not found in ${folder}, creating one")
-            val content = """
-                    pluginManagement {
-                        repositories {
-                            mavenLocal()
-                            mavenCentral()
-                        }
-                    }
-                """.trimIndent()
-            settingsGradle.writeText(content)
-        }
-
         return this.newBuild()
+//            .setJavaHome(Platform.getJavaHome())
+            .withArguments("--init-script", initGradle.toAbsolutePath().toString())
             .addProgressListener(ProgressListener { event ->
                 val name = event.descriptor.name
                 if(event is TaskStartEvent) {
@@ -179,6 +190,5 @@ class GradleService(val editor: Editor) {
                     setStandardOutput(System.out)
                 }
             }
-//            .setJavaHome(Platform.getJavaHome())
     }
 }
