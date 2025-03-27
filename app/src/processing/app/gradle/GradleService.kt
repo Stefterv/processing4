@@ -129,6 +129,8 @@ class GradleService(val editor: Editor) {
 
             // TODO: Attach listener if new tab is created
         }
+
+        // TODO: Attach a debugger (to gradle, and the running sketch)
     }
 
 
@@ -140,27 +142,41 @@ class GradleService(val editor: Editor) {
         val workingDir = kotlin.io.path.createTempDirectory()
         val group = System.getProperty("processing.group", "org.processing")
 
+
+        // TODO: is this the best way to handle unsaved data?
+        val unsaved = mutableListOf<String>()
+        editor.sketch.code.forEach { code ->
+            if(!code.isModified) return@forEach
+
+            val file = workingDir.resolve("unsaved/${code.fileName}")
+            file.parent.toFile().mkdirs()
+            file.writeText(code.documentText)
+            unsaved.add(code.fileName)
+        }
+
         val variables = mapOf(
             "group" to group,
             "version" to Base.getVersionName(),
             "sketchFolder" to folder.absolutePath,
             "workingDir" to workingDir.toAbsolutePath().toString(),
-            "settings" to Platform.getSettingsFolder().absolutePath.toString()
+            "settings" to Platform.getSettingsFolder().absolutePath.toString(),
+            "unsaved" to unsaved.joinToString(",")
         )
+        val repository = Platform.getContentFile("repository").absolutePath
 
         val initGradle = workingDir.resolve("init.gradle.kts").apply {
             val content = """
                 beforeSettings{
                     pluginManagement {
                         repositories {
-                            maven { url = uri("${Platform.getContentFile("repository").absolutePath}") }
+                            maven { url = uri("$repository") }
                             gradlePluginPortal()
                         }
                     }
                 }
                 allprojects{
                     repositories {
-                        maven { url = uri("${Platform.getContentFile("repository").absolutePath}") }
+                        maven { url = uri("$repository") }
                         mavenCentral()
                     }
                 }
@@ -168,6 +184,8 @@ class GradleService(val editor: Editor) {
 
             writeText(content)
         }
+
+
 
         val buildGradle = folder.resolve("build.gradle.kts")
         // TODO: Manage script if the comment exists
@@ -177,7 +195,7 @@ class GradleService(val editor: Editor) {
             // TODO: Allow for the whole configuration to be overridden
             // TODO: Move this to java mode
             val content = """
-                    // Managed by: Processing ${Base.getVersionName()}
+                    // Managed by: Processing ${Base.getVersionName()} ${editor.mode.title}
                     // If you delete this comment Processing will no longer update the build scripts
 
                     plugins{
@@ -188,7 +206,7 @@ class GradleService(val editor: Editor) {
         }
 
         return this.newBuild()
-//            .setJavaHome(Platform.getJavaHome())
+            .setJavaHome(Platform.getJavaHome())
             .withArguments(
                 "--init-script", initGradle.toAbsolutePath().toString(),
                 *variables.entries.map { "-Pprocessing.${it.key}=${it.value}" }.toTypedArray()
