@@ -369,6 +369,7 @@ tasks.register<Download>("includeJdk") {
             into(composeResources(""))
         }
     }
+    finalizedBy("prepareAppResources")
 }
 tasks.register<Copy>("includeSharedAssets"){
     from("../build/shared/")
@@ -526,7 +527,6 @@ afterEvaluate {
         dependsOn(
             "includeCore",
             "includeJavaMode",
-            "includeJdk",
             "includeSharedAssets",
             "includeProcessingExamples",
             "includeProcessingWebsiteExamples",
@@ -554,7 +554,7 @@ afterEvaluate {
         }
     }
     tasks.named("createDistributable").configure {
-        dependsOn("signResources")
+        dependsOn("signResources", "includeJdk")
         finalizedBy("setExecutablePermissions")
     }
 }
