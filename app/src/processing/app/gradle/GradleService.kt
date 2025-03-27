@@ -4,9 +4,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import com.sun.jdi.Bootstrap
 import com.sun.jdi.VirtualMachine
-import com.sun.jdi.VirtualMachineManager
 import com.sun.jdi.connect.AttachingConnector
 import kotlinx.coroutines.*
+import org.gradle.internal.logging.events.OutputEvent
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
@@ -17,11 +17,12 @@ import processing.app.Base
 import processing.app.Messages
 import processing.app.Platform
 import processing.app.ui.Editor
-import java.io.File
+import java.io.*
 import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import kotlin.io.path.writeText
+
 
 class GradleService(val editor: Editor) {
     val availableTasks = mutableStateListOf<String>()
@@ -39,6 +40,7 @@ class GradleService(val editor: Editor) {
 
     val folder: File get() = editor.sketch.folder
 
+    // TODO: Capture output & enable at start of running
 
     fun prepare(){
         Messages.log("Preparing sketch")
@@ -64,6 +66,7 @@ class GradleService(val editor: Editor) {
         startRun {
             connection.newSketchBuild()
                 .addDebugging()
+                .addProgressListener(listOf(":run"))
                 .forTasks("run")
                 .withCancellationToken(cancel.token())
                 .run()
@@ -77,6 +80,7 @@ class GradleService(val editor: Editor) {
         Messages.log("Exporting sketch")
         startRun {
             connection.newSketchBuild()
+                .addProgressListener(listOf(":runDistributable"))
                 .forTasks("runDistributable")
                 .withCancellationToken(cancel.token())
                 .run()
@@ -118,6 +122,7 @@ class GradleService(val editor: Editor) {
 
             // TODO: Attach listener if new tab is created
         }
+        // TODO: Stop on dispose
     }
 
     private fun startRun(action: () -> Unit){
@@ -128,7 +133,16 @@ class GradleService(val editor: Editor) {
 
             cancel.cancel()
             cancel = GradleConnector.newCancellationTokenSource()
-            action()
+
+            editor.console.clear()
+
+            try{
+                action()
+            }catch (e: Exception){
+                Messages.log("Error while running sketch: ${e.message}")
+                return@launch
+            }
+
         }
         run?.invokeOnCompletion { running.value = run?.isActive ?: false }
     }
@@ -138,18 +152,33 @@ class GradleService(val editor: Editor) {
             if(event !is TaskStartEvent) return@ProgressListener
             if(event.descriptor.name != ":run") return@ProgressListener
 
-            Messages.log("Running sketch")
+            Messages.log("Attaching to VM")
             val connector = Bootstrap.virtualMachineManager().allConnectors()
                 .firstOrNull { it.name() == "com.sun.jdi.SocketAttach" }
                     as AttachingConnector?
                 ?: return@ProgressListener
             val args = connector.defaultArguments()
             args["port"]?.setValue(debugPort.toString())
-            vm = connector.attach(args)
+            val vm = connector.attach(args)
+            this@GradleService.vm = vm
+            Messages.log("Attached to VM: ${vm.name()}")
         })
         return this
     }
 
+    private fun BuildLauncher.addProgressListener(skipping: List<String> ): BuildLauncher{
+        this.addProgressListener(ProgressListener { event ->
+            val name = event.descriptor.name
+            if(skipping.contains(name)) return@ProgressListener
+            if(event is TaskStartEvent) {
+                if(!availableTasks.contains(name)) availableTasks.add(name)
+            }
+            if(event is TaskFinishEvent){
+                finishedTasks.add(name)
+            }
+        })
+        return this
+    }
 
     private fun ProjectConnection.newSketchBuild(): BuildLauncher{
         finishedTasks.clear()
@@ -226,25 +255,12 @@ class GradleService(val editor: Editor) {
         }
 
         return this.newBuild()
-//            .setJavaHome(Platform.getJavaHome())
+            .setJavaHome(Platform.getJavaHome())
             .withArguments(
                 "--init-script", initGradle.toAbsolutePath().toString(),
                 *variables.entries.map { "-Pprocessing.${it.key}=${it.value}" }.toTypedArray()
             )
-            .addProgressListener(ProgressListener { event ->
-                val name = event.descriptor.name
-                if(event is TaskStartEvent) {
-                    if(!availableTasks.contains(name)) availableTasks.add(name)
-                }
-                if(event is TaskFinishEvent){
-                    finishedTasks.add(name)
-                }
-            })
-            .apply {
-                if(Base.DEBUG) {
-                    setStandardError(System.err)
-                    setStandardOutput(System.out)
-                }
-            }
+            .setStandardError(System.err)
+            .setStandardOutput(System.out)
     }
 }

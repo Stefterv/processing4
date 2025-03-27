@@ -19,6 +19,7 @@ import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
@@ -70,24 +71,35 @@ class Toolbar(val editor: Editor) {
                 .padding(start = Editor.LEFT_GUTTER.dp)
                 .padding(vertical = 11.dp)
             ,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ){
-            val available = editor.service.availableTasks
-            val finished = editor.service.finishedTasks
+            val available = editor.service.availableTasks.count()
+            val finished = editor.service.finishedTasks.count()
             val isRunning = editor.service.running.value
             ActionButton(
+                active = isRunning,
                 modifier = Modifier
                     .onPointerEvent(PointerEventType.Press){
                         editor.service.run()
                     }
-                    .padding(1.dp)
+                    .padding(2.dp)
             ) {
                 val color = LocalContentColor.current
                 Fading(visible = isRunning) {
-                    CircularProgressIndicator(
-                        //progress = finished.count().toFloat() / (available.count() - 1),
-                        color = color
-                    )
+                    if(finished == 0) {
+                        CircularProgressIndicator(
+                            color = color,
+                            strokeCap = StrokeCap.Round,
+                            strokeWidth = 3.dp
+                        )
+                    }else{
+                        CircularProgressIndicator(
+                            progress = finished.toFloat() / available,
+                            color = color,
+                            strokeCap = StrokeCap.Round,
+                            strokeWidth = 3.dp
+                        )
+                    }
                 }
                 Box(modifier = Modifier.padding(4.dp)) {
                     Icon(
@@ -119,7 +131,7 @@ class Toolbar(val editor: Editor) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun ActionButton(modifier: Modifier = Modifier,  content: @Composable () -> Unit){
+fun ActionButton(modifier: Modifier = Modifier, active: Boolean = false, content: @Composable () -> Unit){
     val baseColor = Theme.get("toolbar.button.enabled.field")
     val baseTextColor = Theme.get("toolbar.button.enabled.glyph")
 
@@ -131,13 +143,18 @@ fun ActionButton(modifier: Modifier = Modifier,  content: @Composable () -> Unit
     val pressedColor = Theme.get("toolbar.button.pressed.field")
     val pressedTextColor = Theme.get("toolbar.button.pressed.glyph")
 
+    val activeColor = Theme.get("toolbar.button.selected.field")
+    val activeTextColor = Theme.get("toolbar.button.pressed.glyph")
+
     val color = when {
+        active -> activeColor
         pressed -> pressedColor
         hover -> hoverColor
         else -> baseColor
     }.toColorInt()
 
     val textColor = when{
+        active -> activeTextColor
         pressed -> pressedTextColor
         hover -> hoverTextColor
         else -> baseTextColor
