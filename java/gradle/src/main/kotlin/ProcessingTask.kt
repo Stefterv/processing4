@@ -7,6 +7,7 @@ import org.gradle.work.InputChanges
 import processing.mode.java.preproc.PdePreprocessor
 import java.io.File
 import java.util.concurrent.Callable
+import java.util.jar.JarFile
 import javax.inject.Inject
 
 abstract class ProcessingTask : SourceTask() {
@@ -45,22 +46,66 @@ abstract class ProcessingTask : SourceTask() {
         }.joinToString("\n"){
             it.readText()
         }
-        File(outputDirectory, "$sketchName.java")
-            .bufferedWriter()
-            .use { out ->
-                val meta = PdePreprocessor
-                    .builderFor(sketchName)
-                    .build()
-                    .write(out, combined)
+        val javaFile = File(outputDirectory, "$sketchName.java").bufferedWriter()
 
+        val meta = PdePreprocessor
+            .builderFor(sketchName)
+            .build()
+            .write(javaFile, combined)
 
-                val importStatement = meta.importStatements
-                println(sketchBook)
+        javaFile.flush()
+        javaFile.close()
 
-//                for (import in importStatement) {
-//                    project.dependencies.add("implementation", import)
-//                }
+        // Scan all the libaries in the sketchbook
+        val libraries = File(sketchBook, "libraries")
+            .listFiles { file -> file.isDirectory }
+            ?.map { folder ->
+                // Find all the jars in the sketch book
+                val jars = folder.resolve("library")
+                    .listFiles{ file -> file.extension == "jar" }
+                    ?.map{ file ->
+
+                        // Inside of each jar, look for the defined classes
+                        val jar = JarFile(file)
+                        val classes = jar.entries().asSequence()
+                            .filter { entry -> entry.name.endsWith(".class") }
+                            .map { entry -> entry.name }
+                            .map { it.substringBeforeLast('/').replace('/', '.') }
+                            .distinct()
+                            .toList()
+
+                        // Return a reference to the jar and its classes
+                        return@map object {
+                            val name = file.name
+                            val path = file
+                            val classes = classes
+                        }
+                    }?: emptyList()
+
+                // Save the parsed jars and which folder
+                return@map object {
+                    val name = folder.name
+                    val path = folder
+                    val jars = jars
+                }
             }
+
+        // Loop over the import statements and find the library jars that provide those imports
+        val dependencies = mutableSetOf<File>()
+        meta.importStatements.map { import ->
+            libraries?.map { library ->
+                library.jars.map { jar ->
+                    jar.classes
+                        .filter { className -> className.startsWith(import.packageName) }
+                        .map { _ ->
+                            dependencies.add(jar.path)
+                        }
+                }
+            }
+        }
+        // Write the dependencies to a file
+        val deps = File(outputDirectory, "$sketchName.dependencies")
+        deps.writeText(dependencies.joinToString("\n") { it.absolutePath })
     }
 
     @get:Inject

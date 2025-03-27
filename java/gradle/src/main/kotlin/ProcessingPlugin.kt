@@ -161,8 +161,8 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             val outputDirectory = project.layout.buildDirectory.asFile.get().resolve( "generated/pde/" + sourceSet.name)
             sourceSet.java.srcDir(outputDirectory)
 
-            val taskName = sourceSet.getTaskName("preprocess", "PDE")
-            project.tasks.register(taskName, ProcessingTask::class.java) { task ->
+            val pdeTaskName = sourceSet.getTaskName("preprocess", "PDE")
+            project.tasks.register(pdeTaskName, ProcessingTask::class.java) { task ->
                 task.description = "Processes the ${sourceSet.name} PDE"
                 task.source = pdeSourceSet
                 task.outputDirectory = outputDirectory
@@ -170,17 +170,27 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 task.workingDir = workingDir
                 task.sketchBook = sketchbook
             }
+            val depsTaskName = sourceSet.getTaskName("addDependencies", "PDE")
+            project.tasks.register(depsTaskName){ task ->
+                task.dependsOn(pdeTaskName)
+                task.doLast {
+                    outputDirectory
+                        .listFiles()
+                        ?.filter { file -> file.name.endsWith(".dependencies") }
+                        ?.map { file ->
+                            val dependencies = file.readLines()
+                            dependencies.forEach { path ->
+                                project.dependencies.add("implementation", project.files(path))
+                            }
+                        }
+                }
+            }
 
             project.tasks.named(
                 sourceSet.compileJavaTaskName
             ) { task ->
-                task.dependsOn(taskName)
+                task.dependsOn(pdeTaskName, depsTaskName)
             }
-        }
-
-        // TODO: Move to ProcessingTask after reading the libs from the sketch
-        File(sketchbook, "libraries").listFiles { file -> file.isDirectory }?.forEach{
-            project.dependencies.add("implementation", project.fileTree(it).apply { include("**/*.jar") })
         }
     }
     abstract class DefaultPDESourceDirectorySet @Inject constructor(

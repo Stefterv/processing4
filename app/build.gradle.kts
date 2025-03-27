@@ -101,6 +101,7 @@ compose.desktop {
 
 dependencies {
     implementation(project(":core"))
+    runtimeOnly(project(":java"))
 
     implementation(libs.flatlaf)
 

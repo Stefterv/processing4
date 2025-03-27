@@ -123,3 +123,7 @@ java/build/
 /java/android/example/build
 /java/android/example/.processing
 /java/gradle/example/build
+java/gradle/example/gradle/wrapper/gradle-wrapper.jar
+java/gradle/example/gradle/wrapper/gradle-wrapper.properties
+java/gradle/example/gradlew
+java/gradle/example/gradlew.bat

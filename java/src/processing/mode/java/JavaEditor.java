@@ -488,7 +488,7 @@ public class JavaEditor extends Editor {
    * Handler for Sketch → Export Application
    */
   public void handleExportApplication() {
-    if(true){
+    if(Base.GRADLE){
         this.service.export();
         return;
     }
@@ -640,7 +640,7 @@ public class JavaEditor extends Editor {
   }
 
   protected void handleLaunch(boolean present, boolean tweak) {
-    if(true){
+    if(Base.GRADLE){
       this.service.run();
       return;
     }

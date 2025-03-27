@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
+import processing.app.Base
 import processing.app.ui.Editor
 import processing.app.ui.EditorToolbar
 import processing.app.ui.Theme
@@ -38,7 +39,7 @@ class Toolbar(val editor: Editor) {
             val panel = ComposePanel().apply {
                 setContent {
                     // TODO: Dynamically switch between the toolbars
-                    val displayNew = true
+                    val displayNew = Base.GRADLE
                     if(displayNew){
                         bar.display()
                         return@setContent
