@@ -40,13 +40,13 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
 
         val preferences = File(settingsFolder, "preferences.txt")
         val prefs = Properties()
-        prefs.load(preferences.inputStream())
+        if(preferences.exists()) prefs.load(preferences.inputStream())
         prefs.setProperty("export.application.fullscreen", "false")
         prefs.setProperty("export.application.present", "false")
         prefs.setProperty("export.application.stop", "false")
-        prefs.store(preferences.outputStream(), null)
+        if(preferences.exists()) prefs.store(preferences.outputStream(), null)
 
-        val sketchbook = prefs.getProperty("sketchbook.path.four")
+        val sketchbook = prefs.getProperty("sketchbook.path.four") ?: ("${System.getProperty("user.home")}/.processing")
 
         // Apply the Java plugin to the Project
         project.plugins.apply(JavaPlugin::class.java)
