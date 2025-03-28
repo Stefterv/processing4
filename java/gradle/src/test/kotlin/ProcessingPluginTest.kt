@@ -9,7 +9,7 @@ class ProcessingPluginTest{
     @Test
     fun testPluginAddsSketchTask(){
         val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply("processing.java.gradle")
+        project.pluginManager.apply("org.processing.gradle")
 
         assert(project.tasks.getByName("sketch") is Task)
     }
@@ -23,7 +23,7 @@ class ProcessingPluginTest{
         val buildFile = folder.newFile("build.gradle.kts")
         buildFile.writeText("""
             plugins{
-                id("processing.java.gradle")
+                id("org.processing.gradle")
             }
         """.trimIndent())
 
@@ -37,12 +37,12 @@ class ProcessingPluginTest{
             }
         """.trimIndent())
 
-        val result = GradleRunner.create()
+        GradleRunner.create()
             .withProjectDir(folder.root)
             .withArguments("build")
             .withPluginClasspath()
             .build()
 
-        assert(folder.root.resolve(".processing/generated/pde/main").exists())
+        assert(folder.root.resolve("build/generated/pde/main").exists())
     }
 }

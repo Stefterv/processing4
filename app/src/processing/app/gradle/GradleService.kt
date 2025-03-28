@@ -23,7 +23,7 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import kotlin.io.path.writeText
 
-
+// TODO: Remove dependency on editor
 class GradleService(val editor: Editor) {
     val availableTasks = mutableStateListOf<String>()
     val finishedTasks = mutableStateListOf<String>()
