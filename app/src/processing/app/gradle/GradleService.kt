@@ -11,6 +11,8 @@ import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.events.ProgressListener
+import org.gradle.tooling.events.problems.ProblemEvent
+import org.gradle.tooling.events.problems.internal.DefaultSingleProblemEvent
 import org.gradle.tooling.events.task.TaskFinishEvent
 import org.gradle.tooling.events.task.TaskStartEvent
 import processing.app.Base
@@ -30,6 +32,7 @@ class GradleService(val editor: Editor) {
     val running = mutableStateOf(false)
     var vm: VirtualMachine? = null
     val debugPort = (30000..60000).random()
+    val problems = mutableStateListOf<ProblemEvent>()
 
     private var connection: ProjectConnection? = null
     private var preparation: Job? = null
@@ -176,6 +179,9 @@ class GradleService(val editor: Editor) {
             if(event is TaskFinishEvent){
                 finishedTasks.add(name)
             }
+            if(event is DefaultSingleProblemEvent){
+                Messages.log("")
+            }
         })
         return this
     }
@@ -255,6 +261,7 @@ class GradleService(val editor: Editor) {
         }
 
         return this.newBuild()
+//            .addJvmArguments("-Xmx2g")
             .setJavaHome(Platform.getJavaHome())
             .withArguments(
                 "--init-script", initGradle.toAbsolutePath().toString(),

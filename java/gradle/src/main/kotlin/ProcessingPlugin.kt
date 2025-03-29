@@ -118,6 +118,8 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             }
         }
 
+        // TODO: Add support for top level .java files
+
         // Add convenience tasks for running, presenting, and exporting the sketch outside of Processing
         if(!isProcessing) {
             project.tasks.create("sketch").apply {
