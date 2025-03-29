@@ -398,7 +398,7 @@ public class Platform {
     }
 
     var home = System.getProperty("java.home");
-    if(home != null && new File(home, "bin/java").exists()){
+    if(home != null){
       return new File(home);
     }
     if (Platform.isMacOS()) {

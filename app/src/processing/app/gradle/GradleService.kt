@@ -227,7 +227,7 @@ class GradleService(val editor: Editor) {
             //"location" to "0,0",
             //"ui.scale" to "1.0",
         )
-        val repository = Platform.getContentFile("repository").absolutePath
+        val repository = Platform.getContentFile("repository").absolutePath.replace("""\""", """\\""")
 
         val initGradle = workingDir.resolve("init.gradle.kts").apply {
             val content = """
