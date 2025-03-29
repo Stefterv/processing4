@@ -57,6 +57,7 @@ abstract class ProcessingTask : SourceTask() {
         javaFile.close()
 
         // Scan all the libaries in the sketchbook
+        // TODO: Move scanning the libraries to a separate task to avoid running this every time
         val libraries = File(sketchBook, "libraries")
             .listFiles { file -> file.isDirectory }
             ?.map { folder ->
@@ -106,6 +107,9 @@ abstract class ProcessingTask : SourceTask() {
         // Write the dependencies to a file
         val deps = File(outputDirectory, "$sketchName.dependencies")
         deps.writeText(dependencies.joinToString("\n") { it.absolutePath })
+
+        // TODO: Add to the dependencies
+        val renderer = meta.sketchRenderer
     }
 
     @get:Inject

@@ -142,13 +142,27 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 description = "Creates a distributable version of the Processing sketch"
 
                 dependsOn("createDistributable")
-                doLast {
+
+            }
+        }
+
+        project.afterEvaluate {
+            // Copy the result of create distributable to the project directory
+            project.tasks.named("createDistributable") { task ->
+                task.doLast {
                     project.copy {
                         it.from(project.tasks.named("createDistributable").get().outputs.files)
                         it.into(project.layout.projectDirectory)
                     }
                 }
             }
+        }
+
+        // Move the processing variables into javaexec tasks so they can be used in the sketch as well
+        project.tasks.withType(JavaExec::class.java).configureEach { task ->
+            project.properties
+                .filterKeys { it.startsWith("processing") }
+                .forEach { (key, value) -> task.systemProperty(key, value) }
         }
 
         project.extensions.getByType(JavaPluginExtension::class.java).sourceSets.all { sourceSet ->

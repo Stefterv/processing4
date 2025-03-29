@@ -482,9 +482,8 @@ tasks.register("signResources"){
         }
         file(composeResources("Info.plist")).delete()
     }
-
-
 }
+
 afterEvaluate {
     tasks.named("prepareAppResources").configure {
         dependsOn(
