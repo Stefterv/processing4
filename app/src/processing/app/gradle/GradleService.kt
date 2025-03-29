@@ -43,8 +43,6 @@ class GradleService(val editor: Editor) {
 
     val folder: File get() = editor.sketch.folder
 
-    // TODO: Capture output & enable at start of running
-
     fun prepare(){
         Messages.log("Preparing sketch")
         if(preparing) return
@@ -72,6 +70,8 @@ class GradleService(val editor: Editor) {
                 .addProgressListener(listOf(":run"))
                 .forTasks("run")
                 .withCancellationToken(cancel.token())
+                .setStandardError(editor.console.err)
+                .setStandardOutput(editor.console.out)
                 .run()
             Messages.log("Running finished")
         }
@@ -86,6 +86,8 @@ class GradleService(val editor: Editor) {
                 .addProgressListener(listOf(":runDistributable"))
                 .forTasks("runDistributable")
                 .withCancellationToken(cancel.token())
+                .setStandardError(editor.console.err)
+                .setStandardOutput(editor.console.out)
                 .run()
             Messages.log("Exporting finished")
         }
@@ -186,7 +188,7 @@ class GradleService(val editor: Editor) {
         return this
     }
 
-    private fun ProjectConnection.newSketchBuild(): BuildLauncher{
+    private fun ProjectConnection.newSketchBuild(): BuildLauncher {
         finishedTasks.clear()
 
         val workingDir = kotlin.io.path.createTempDirectory()
@@ -196,7 +198,7 @@ class GradleService(val editor: Editor) {
         // TODO: is this the best way to handle unsaved data?
         val unsaved = mutableListOf<String>()
         editor.sketch.code.forEach { code ->
-            if(!code.isModified) return@forEach
+            if (!code.isModified) return@forEach
 
             val file = workingDir.resolve("unsaved/${code.fileName}")
             file.parent.toFile().mkdirs()
@@ -237,10 +239,9 @@ class GradleService(val editor: Editor) {
         }
 
 
-
         val buildGradle = folder.resolve("build.gradle.kts")
         // TODO: Manage script if the comment exists
-        if(!buildGradle.exists()){
+        if (!buildGradle.exists()) {
             Messages.log("build.gradle.kts not found in ${folder}, creating one")
             // TODO: Allow for other plugins to be registered
             // TODO: Allow for the whole configuration to be overridden
@@ -256,18 +257,17 @@ class GradleService(val editor: Editor) {
             buildGradle.writeText(content)
         }
         val settingsGradle = folder.resolve("settings.gradle.kts")
-        if(!settingsGradle.exists()) {
+        if (!settingsGradle.exists()) {
             settingsGradle.createNewFile()
         }
+        // TODO: Add support for the variables defined in PApplet#9782
 
+        val arguments = mutableListOf("--init-script", initGradle.toAbsolutePath().toString())
+        if (!Base.DEBUG) arguments.add("--quiet")
+
+        arguments.addAll(variables.entries.map { "-Pprocessing.${it.key}=${it.value}" })
         return this.newBuild()
-//            .addJvmArguments("-Xmx2g")
             .setJavaHome(Platform.getJavaHome())
-            .withArguments(
-                "--init-script", initGradle.toAbsolutePath().toString(),
-                *variables.entries.map { "-Pprocessing.${it.key}=${it.value}" }.toTypedArray()
-            )
-            .setStandardError(System.err)
-            .setStandardOutput(System.out)
+            .withArguments(*arguments.toTypedArray())
     }
 }
