@@ -377,6 +377,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
         }
       });
     }
+
   }
 
 
@@ -626,12 +627,10 @@ public abstract class Editor extends JFrame implements RunnerListener {
     toolTipWarningColor = Theme.get("errors.selection.warning.bgcolor");
     toolTipErrorColor = Theme.get("errors.selection.error.bgcolor");
 
-    if(Platform.isWindows()) {
-      UIManager.put("RootPane.background", color);
-      UIManager.put("TitlePane.embeddedForeground", Theme.getColor("editor.fgcolor"));
-      getRootPane().updateUI();
-      UIManager.put("RootPane.background", null);
-    }
+    UIManager.put("RootPane.background", color);
+    UIManager.put("TitlePane.embeddedForeground", Theme.getColor("editor.fgcolor"));
+    getRootPane().updateUI();
+    UIManager.put("RootPane.background", null);
 
     JPopupMenu popup = modePopup.getPopupMenu();
     // Cannot use instanceof because com.formdev.flatlaf.ui.FlatPopupMenuBorder
@@ -822,6 +821,18 @@ public abstract class Editor extends JFrame implements RunnerListener {
     item.addActionListener(e -> handleIndentOutdent(false));
     menu.add(item);
 
+    item = Toolkit.newJMenuItemExt("menu.edit.increase_font");
+    item.addActionListener(e -> {
+      modifyFontSize(true);
+    });
+    menu.add(item);
+
+    item = Toolkit.newJMenuItemExt("menu.edit.decrease_font");
+    item.addActionListener(e -> {
+      modifyFontSize(false);
+    });
+    menu.add(item);
+
     menu.addSeparator();
 
     item = Toolkit.newJMenuItem(Language.text("menu.edit.find"), 'F');
@@ -879,6 +890,16 @@ public abstract class Editor extends JFrame implements RunnerListener {
     return menu;
   }
 
+  protected void modifyFontSize(boolean increase){
+    var fontSize = Preferences.getInteger("editor.font.size");
+    fontSize += increase ? 1 : -1;
+    fontSize = Math.max(5, Math.min(72, fontSize));
+    Preferences.setInteger("editor.font.size", fontSize);
+    for (Editor editor : base.getEditors()) {
+      editor.applyPreferences();
+    }
+    Preferences.save();
+  }
 
   abstract public JMenu buildSketchMenu();
 
