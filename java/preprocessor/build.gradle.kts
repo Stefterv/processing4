@@ -48,7 +48,7 @@ mavenPublishing{
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
     // Only sign if signing is set up
-    if(project.hasProperty("signing.keyId"))
+    if(project.hasProperty("signing.keyId") || project.hasProperty("signing.signingInMemoryKey"))
         signAllPublications()
 
     pom{
