@@ -175,6 +175,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 filter.exclude("${project.layout.buildDirectory.asFile.get().name}/**")
 
                 srcDir("./")
+                srcDir("$workingDir/unsaved")
             }
             sourceSet.allSource.source(pdeSourceSet)
 

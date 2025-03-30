@@ -36,16 +36,18 @@ abstract class ProcessingTask : SourceTask() {
         // Using stableSources since we can only run the pre-processor on the full set of sources
         // TODO: Allow pre-processor to run on individual files
 
-        val unsaved = (project.findProperty("processing.unsaved") as String?)?.split(",") ?: emptyList()
-
-        val combined = stableSources.map { file ->
-            if (file.name in unsaved)
-                File(workingDir, "unsaved").resolve(file.name)
-            else
-                file
-        }.joinToString("\n"){
-            it.readText()
-        }
+        // TODO: Only compare file names from both defined roots
+        val combined = stableSources
+            .files
+            .groupBy { it.name }
+            .map { entry ->
+                entry.value
+                    .sortedByDescending { it.lastModified() }
+                    .first()
+            }
+            .joinToString("\n"){
+                 it.readText()
+         }
         val javaFile = File(outputDirectory, "$sketchName.java").bufferedWriter()
 
         val meta = PdePreprocessor

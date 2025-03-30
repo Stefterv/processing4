@@ -15,7 +15,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,19 +31,17 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
-import com.sun.jdi.ObjectReference
-import com.sun.jdi.event.BreakpointEvent
-import processing.app.Base
+import processing.app.gradle.ActionGradleJob
+import processing.app.gradle.GradleJob
+import processing.app.gradle.ScreenshotService
 import processing.app.ui.Editor
 import processing.app.ui.EditorToolbar
 import processing.app.ui.Theme
 import processing.app.ui.theme.toColorInt
 import java.io.File
-import java.nio.file.Files
 import javax.swing.JComponent
 
 class Toolbar(val editor: Editor) {
@@ -122,51 +119,13 @@ class Toolbar(val editor: Editor) {
 
             }
 
-            val vm by editor.service.vm
+            val vm = editor.service.jobs.lastOrNull()?.vm?.value
             vm?.apply {
                 ActionButton(
                     modifier = Modifier
                         .onClick {
-                            val manager = this.eventRequestManager()
-                            val type = this.classesByName("processing.core.PApplet").firstOrNull() ?: return@onClick
-                            val method = type.methodsByName("handleDraw").firstOrNull() ?: return@onClick
-
-                            val saveMethod = type.methodsByName("save").firstOrNull() ?: return@onClick
-                            val tempFile = Files.createTempFile( "sketch", ".png")
-
-                            val location = method.allLineLocations().last()
-
-                            val breakpoint = manager.createBreakpointRequest(location)
-                            breakpoint.enable()
-
-                            val queue = this.eventQueue()
-                            var waiting = true
-                            while (waiting){
-                                try{
-                                    val events = queue.remove()
-                                    events.forEach { event ->
-                                        if (event is BreakpointEvent) {
-                                            val thread = event.thread()
-                                            val frame = thread.frame(0)
-                                            val obj = frame.thisObject() ?: return@forEach
-
-                                            val arg = this.mirrorOf(tempFile.toAbsolutePath().toString())
-
-                                            obj.invokeMethod(thread, saveMethod, listOf(arg), ObjectReference.INVOKE_SINGLE_THREADED)
-
-                                            if (thread.isSuspended) {
-                                                thread.resume()
-                                            }
-
-                                            screenshot = tempFile.toFile()
-
-                                            waiting = false
-                                        }
-                                    }
-                                    events.resume()
-                                }catch (e: Exception){
-                                    break
-                                }
+                            ScreenshotService.takeScreenshot(this) { file ->
+                                screenshot = file.toFile()
                             }
                         }
                 ) {
@@ -177,7 +136,7 @@ class Toolbar(val editor: Editor) {
                         modifier = Modifier.padding(6.dp)
                     )
                 }
-                Spacer(modifier = Modifier.fillMaxWidth())
+
             }
 
             var expanded by remember { mutableStateOf(false) }
@@ -225,12 +184,12 @@ class Toolbar(val editor: Editor) {
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     fun SketchButtons() {
-        val available = editor.service.availableTasks.count()
-        val finished = editor.service.finishedTasks.count()
-        val isRunning = editor.service.running.value
+        val job = editor.service.jobs.filterIsInstance<ActionGradleJob>().lastOrNull()
+        val state = job?.state?.value ?: GradleJob.State.NONE
+        val isActive = state != GradleJob.State.NONE && state != GradleJob.State.DONE
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ActionButton(
-                active = isRunning,
+                active = isActive,
                 modifier = Modifier
                     .onPointerEvent(PointerEventType.Press) {
                         editor.service.run()
@@ -238,21 +197,13 @@ class Toolbar(val editor: Editor) {
                     .padding(2.dp)
             ) {
                 val color = LocalContentColor.current
-                Fading(visible = isRunning) {
-                    if (finished == 0) {
-                        CircularProgressIndicator(
-                            color = color,
-                            strokeCap = StrokeCap.Round,
-                            strokeWidth = 3.dp
-                        )
-                    } else {
-                        CircularProgressIndicator(
-                            progress = finished.toFloat() / available,
-                            color = color,
-                            strokeCap = StrokeCap.Round,
-                            strokeWidth = 3.dp
-                        )
-                    }
+                Fading(visible = state == GradleJob.State.BUILDING) {
+                    // TODO: Add progress tracking
+                    CircularProgressIndicator(
+                        color = color,
+                        strokeCap = StrokeCap.Round,
+                        strokeWidth = 3.dp
+                    )
                 }
                 Box(modifier = Modifier.padding(4.dp)) {
                     Icon(
@@ -262,7 +213,7 @@ class Toolbar(val editor: Editor) {
                     )
                 }
             }
-            Fading(visible = isRunning) {
+            Fading(visible = isActive) {
                 ActionButton(
                     modifier = Modifier
                         .onPointerEvent(PointerEventType.Press) {
@@ -344,6 +295,7 @@ class Toolbar(val editor: Editor) {
             visible = visible,
             enter = fadeIn(
                 animationSpec = tween(
+                    delayMillis = 2_500,
                     durationMillis = 250,
                     easing = LinearEasing
                 )

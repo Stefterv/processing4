@@ -2,18 +2,12 @@ package processing.app.gradle
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import com.sun.jdi.Bootstrap
-import com.sun.jdi.VirtualMachine
-import com.sun.jdi.connect.AttachingConnector
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
-import org.gradle.tooling.events.ProgressListener
-import org.gradle.tooling.events.problems.ProblemEvent
-import org.gradle.tooling.events.problems.internal.DefaultSingleProblemEvent
-import org.gradle.tooling.events.task.TaskFinishEvent
-import org.gradle.tooling.events.task.TaskStartEvent
 import processing.app.Base
 import processing.app.Messages
 import processing.app.Platform
@@ -24,26 +18,25 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import kotlin.io.path.writeText
 
-// TODO: Remove dependency on editor
-// TODO: Move to jobs system
+// TODO: Remove dependency on editor (editor is not mockable, or move editor away from JFrame)
 // TODO: Improve progress tracking
+// TODO: Improve error reporting
+// TODO: PoC new debugger/tweak mode
+
+
+// The gradle service runs the gradle tasks and manages the gradle connection
+// It will create the necessary build files for gradle to run
 class GradleService(val editor: Editor) {
-    val active = mutableStateOf(true)
-    val availableTasks = mutableStateListOf<String>()
-    val finishedTasks = mutableStateListOf<String>()
-    val running = mutableStateOf(false)
-    var vm = mutableStateOf<VirtualMachine?>(null)
-    val debugPort = (30000..60000).random()
-    val problems = mutableStateListOf<ProblemEvent>()
-
-    private var connection: ProjectConnection? = null
-    private var preparation: Job? = null
-    private var preparing = false
-
-    private var run: Job? = null
-    private var cancel = GradleConnector.newCancellationTokenSource()
-
     val folder: File get() = editor.sketch.folder
+    val active = mutableStateOf(true)
+
+    val jobs = mutableStateListOf<GradleJob>()
+    val workingDir = kotlin.io.path.createTempDirectory()
+    val debugPort = (30_000..60_000).random()
+
+    var connection: ProjectConnection? = null
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     // Hooks for java to check if the Gradle service is running
     fun getEnabled(): Boolean {
@@ -53,168 +46,112 @@ class GradleService(val editor: Editor) {
         this.active.value = active
     }
 
-    fun prepare(){
-        Messages.log("Preparing sketch")
-        if(preparing) return
-        preparation?.cancel()
-        preparation = CoroutineScope(Dispatchers.IO).launch {
-            val connection = connection ?: return@launch
-            delay(1000)
-            preparing = true
-
-            connection.newSketchBuild()
-                .forTasks("jar")
-                .run()
-
-            preparing = false
-            Messages.log("Preparation finished")
-        }
-    }
-
-    fun run(){
-        val connection = connection ?: return
-        Messages.log("Running sketch")
-        startRun {
-            connection.newSketchBuild()
-                .addDebugging()
-                .addProgressListener(listOf(":run"))
-                .forTasks("run")
-                .withCancellationToken(cancel.token())
-                .setStandardError(editor.console.err)
-                .setStandardOutput(editor.console.out)
-                .run()
-            Messages.log("Running finished")
-        }
-
-    }
-
-    fun export(){
-        val connection = connection ?: return
-        Messages.log("Exporting sketch")
-        startRun {
-            connection.newSketchBuild()
-                .addProgressListener(listOf(":runDistributable"))
-                .forTasks("runDistributable")
-                .withCancellationToken(cancel.token())
-                .setStandardError(editor.console.err)
-                .setStandardOutput(editor.console.out)
-                .run()
-            Messages.log("Exporting finished")
-        }
-    }
-
-    fun stop(){
-        cancel.cancel()
-    }
-
-
-
     fun startService(){
-        Messages.log("Starting Gradle service at ${folder}")
-
+        Messages.log("Starting Gradle service at $folder")
+        // TODO: recreate connection if sketch folder changes
         connection = GradleConnector.newConnector()
             .forProjectDirectory(folder)
             .connect()
 
-        // TODO: recreate connection if sketch folder changes
+        startListening()
+        startBuilding()
+    }
 
+    // TODO: Improve background building
+    fun startBuilding(){
+        scope.launch {
+            // TODO: Improve the experience with unsaved
+            val job = BackgroundGradleJob()
+            job.service = this@GradleService
+            job.configure = {
+                setup()
+                forTasks("jar")
+                addArguments("--continuous")
+                if (Base.DEBUG){
+                    setStandardError(editor.console.err)
+                    setStandardOutput(editor.console.out)
+                }
+            }
+            job.start()
+        }
+    }
+
+    private fun startListening(){
         SwingUtilities.invokeLater {
             editor.sketch.code.forEach {
                 it.document.addDocumentListener(object : DocumentListener {
                     override fun insertUpdate(e: DocumentEvent) {
-                        prepare()
+                        setupGradle()
                     }
 
                     override fun removeUpdate(e: DocumentEvent) {
-                        prepare()
+                        setupGradle()
                     }
 
                     override fun changedUpdate(e: DocumentEvent) {
-                        prepare()
+                        setupGradle()
                     }
                 })
             }
 
-            // TODO: Attach listener if new tab is created
+            // TODO: Attach listener to new tab created
         }
-        // TODO: Stop on dispose
+        // TODO: Stop all jobs on dispose
     }
+    fun run(){
+        stopActions()
 
-    private fun startRun(action: () -> Unit){
-        running.value = true
-        run?.cancel()
-        run = CoroutineScope(Dispatchers.IO).launch {
-            preparation?.join()
-
-            cancel.cancel()
-            cancel = GradleConnector.newCancellationTokenSource()
-
-            editor.console.clear()
-
-            try{
-                action()
-            }catch (e: Exception){
-                Messages.log("Error while running sketch: ${e.message}")
-                return@launch
-            }
-
+        val job = ActionGradleJob()
+        job.service = this
+        job.configure = {
+            setup()
+            forTasks("run")
+            setStandardError(editor.console.err)
+            if (Base.DEBUG) setStandardOutput(editor.console.out)
         }
-        run?.invokeOnCompletion { running.value = run?.isActive ?: false }
+        job.start()
     }
 
-    private fun BuildLauncher.addDebugging(): BuildLauncher{
-        this.addProgressListener(ProgressListener { event ->
-            if(event !is TaskStartEvent) return@ProgressListener
-            if(event.descriptor.name != ":run") return@ProgressListener
+    fun export(){
+        stopActions()
 
-            Messages.log("Attaching to VM")
-            val connector = Bootstrap.virtualMachineManager().allConnectors()
-                .firstOrNull { it.name() == "com.sun.jdi.SocketAttach" }
-                    as AttachingConnector?
-                ?: return@ProgressListener
-            val args = connector.defaultArguments()
-            args["port"]?.setValue(debugPort.toString())
-            val sketch = connector.attach(args)
-            vm.value = sketch
-            Messages.log("Attached to VM: ${sketch.name()}")
-        })
-        return this
+        val job = ActionGradleJob()
+        job.service = this
+        job.configure = {
+            setup()
+            forTasks("runDistributable")
+            setStandardError(editor.console.err)
+            if (Base.DEBUG) setStandardOutput(editor.console.out)
+        }
+        job.start()
     }
 
-    private fun BuildLauncher.addProgressListener(skipping: List<String> ): BuildLauncher{
-        this.addProgressListener(ProgressListener { event ->
-            val name = event.descriptor.name
-            if(skipping.contains(name)) return@ProgressListener
-            if(event is TaskStartEvent) {
-                if(!availableTasks.contains(name)) availableTasks.add(name)
-            }
-            if(event is TaskFinishEvent){
-                finishedTasks.add(name)
-            }
-            if(event is DefaultSingleProblemEvent){
-                problems.add(event)
-            }
-        })
-        return this
+    fun stop(){
+        stopActions()
+        startBuilding()
     }
 
-    private fun ProjectConnection.newSketchBuild(): BuildLauncher {
-        finishedTasks.clear()
+    fun stopActions(){
+        jobs
+            .filterIsInstance<ActionGradleJob>()
+            .forEach(GradleJob::cancel)
+    }
 
-        val workingDir = kotlin.io.path.createTempDirectory()
-        val group = System.getProperty("processing.group", "org.processing")
-
-
+    private fun setupGradle(): MutableList<String> {
         // TODO: is this the best way to handle unsaved data?
-        val unsaved = mutableListOf<String>()
-        editor.sketch.code.forEach { code ->
-            if (!code.isModified) return@forEach
+        // Certainly not...
+        // Gradle is not recognizing the unsaved files as changed
+        // Tricky as when we save the file the actual one will be the latest
+        val unsaved = editor.sketch.code
+            .filter { it.isModified }
+            .map { code ->
+                val file = workingDir.resolve("unsaved/${code.fileName}")
+                file.parent.toFile().mkdirs()
+                file.writeText(code.documentText)
+                code.fileName
+            }
 
-            val file = workingDir.resolve("unsaved/${code.fileName}")
-            file.parent.toFile().mkdirs()
-            file.writeText(code.documentText)
-            unsaved.add(code.fileName)
-        }
+        val group = System.getProperty("processing.group", "org.processing")
 
         val variables = mapOf(
             "group" to group,
@@ -268,6 +205,7 @@ class GradleService(val editor: Editor) {
             // TODO: Allow for other plugins to be registered
             // TODO: Allow for the whole configuration to be overridden
             // TODO: Move this to java mode
+            // TODO: Define new plugin / mode schema
             val content = """
                     // Managed by: Processing ${Base.getVersionName()} ${editor.mode.title}
                     // If you delete this comment Processing will no longer update the build scripts
@@ -282,13 +220,19 @@ class GradleService(val editor: Editor) {
         if (!settingsGradle.exists()) {
             settingsGradle.createNewFile()
         }
-        // TODO: Add support for the variables defined in PApplet#9782
 
         val arguments = mutableListOf("--init-script", initGradle.toAbsolutePath().toString())
         if (!Base.DEBUG) arguments.add("--quiet")
-
         arguments.addAll(variables.entries.map { "-Pprocessing.${it.key}=${it.value}" })
-        return this.newBuild()
+
+        return arguments
+    }
+
+
+    private fun BuildLauncher.setup(extraArguments: List<String> = listOf()): BuildLauncher {
+        val arguments = setupGradle()
+        arguments.addAll(extraArguments)
+        return this
             .setJavaHome(Platform.getJavaHome())
             .withArguments(*arguments.toTypedArray())
     }
