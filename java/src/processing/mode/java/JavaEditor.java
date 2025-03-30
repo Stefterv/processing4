@@ -29,7 +29,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -488,8 +487,8 @@ public class JavaEditor extends Editor {
    * Handler for Sketch → Export Application
    */
   public void handleExportApplication() {
-    if(Base.GRADLE){
-        this.service.export();
+    if(service.getEnabled()){
+        service.export();
         return;
     }
     if (handleExportCheckModified()) {
@@ -640,7 +639,7 @@ public class JavaEditor extends Editor {
   }
 
   protected void handleLaunch(boolean present, boolean tweak) {
-    if(Base.GRADLE){
+    if(this.service.getEnabled()){
       this.service.run();
       return;
     }

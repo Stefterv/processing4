@@ -5,13 +5,20 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposePanel
@@ -22,16 +29,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.rememberWindowState
+import com.sun.jdi.ObjectReference
+import com.sun.jdi.event.BreakpointEvent
 import processing.app.Base
 import processing.app.ui.Editor
 import processing.app.ui.EditorToolbar
 import processing.app.ui.Theme
 import processing.app.ui.theme.toColorInt
+import java.io.File
+import java.nio.file.Files
 import javax.swing.JComponent
 
 class Toolbar(val editor: Editor) {
-    companion object{
+    companion object {
+        @OptIn(ExperimentalComposeUiApi::class)
         @JvmStatic
         fun legacyWrapped(editor: Editor, toolbar: EditorToolbar): JComponent {
             // TODO: Somehow override the menubar items as well
@@ -39,9 +57,8 @@ class Toolbar(val editor: Editor) {
             val bar = Toolbar(editor)
             val panel = ComposePanel().apply {
                 setContent {
-                    // TODO: Dynamically switch between the toolbars
-                    val displayNew = Base.GRADLE
-                    if(displayNew){
+                    val displayNew = editor.service.active.value
+                    if (displayNew) {
                         bar.display()
                         return@setContent
                     }
@@ -55,44 +72,180 @@ class Toolbar(val editor: Editor) {
         }
     }
 
-    @OptIn(ExperimentalComposeUiApi::class)
+
+    @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
     @Composable
-    fun display(){
+    fun display() {
         val startColor = Theme.get("toolbar.gradient.top").toColorInt()
         val endColor = Theme.get("toolbar.gradient.bottom").toColorInt()
         val colorStops = arrayOf(
             0.0f to Color(startColor),
             1f to Color(endColor)
         )
-
         Row(
             modifier = Modifier.background(Brush.verticalGradient(colorStops = colorStops))
                 .fillMaxWidth()
-                .padding(start = Editor.LEFT_GUTTER.dp)
-                .padding(vertical = 11.dp)
-            ,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ){
-            val available = editor.service.availableTasks.count()
-            val finished = editor.service.finishedTasks.count()
-            val isRunning = editor.service.running.value
+                .padding(start = Editor.LEFT_GUTTER.dp, end = Editor.RIGHT_GUTTER.dp)
+                .padding(vertical = 11.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            val windowState = rememberWindowState(
+                width = Dp.Unspecified,
+                height = Dp.Unspecified,
+                position = WindowPosition(alignment = Alignment.Center),
+            )
+
+            SketchButtons()
+
+            var screenshot by remember { mutableStateOf<File?>(null) }
+            screenshot?.apply {
+                Window(
+                    onCloseRequest = {
+                        screenshot = null
+                    },
+                    resizable = true,
+                    title = "Screenshot",
+                    state = windowState,
+                ) {
+                    Column(modifier = Modifier.padding(16.dp).defaultMinSize(400.dp, 400.dp)) {
+                        val bitmap = remember { loadImageBitmap(screenshot!!.inputStream()) }
+                        screenshot?.let {
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = "Screenshot",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                }
+
+            }
+
+            val vm by editor.service.vm
+            vm?.apply {
+                ActionButton(
+                    modifier = Modifier
+                        .onClick {
+                            val manager = this.eventRequestManager()
+                            val type = this.classesByName("processing.core.PApplet").firstOrNull() ?: return@onClick
+                            val method = type.methodsByName("handleDraw").firstOrNull() ?: return@onClick
+
+                            val saveMethod = type.methodsByName("save").firstOrNull() ?: return@onClick
+                            val tempFile = Files.createTempFile( "sketch", ".png")
+
+                            val location = method.allLineLocations().last()
+
+                            val breakpoint = manager.createBreakpointRequest(location)
+                            breakpoint.enable()
+
+                            val queue = this.eventQueue()
+                            var waiting = true
+                            while (waiting){
+                                try{
+                                    val events = queue.remove()
+                                    events.forEach { event ->
+                                        if (event is BreakpointEvent) {
+                                            val thread = event.thread()
+                                            val frame = thread.frame(0)
+                                            val obj = frame.thisObject() ?: return@forEach
+
+                                            val arg = this.mirrorOf(tempFile.toAbsolutePath().toString())
+
+                                            obj.invokeMethod(thread, saveMethod, listOf(arg), ObjectReference.INVOKE_SINGLE_THREADED)
+
+                                            if (thread.isSuspended) {
+                                                thread.resume()
+                                            }
+
+                                            screenshot = tempFile.toFile()
+
+                                            waiting = false
+                                        }
+                                    }
+                                    events.resume()
+                                }catch (e: Exception){
+                                    break
+                                }
+                            }
+                        }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Share,
+                        contentDescription = "Settings",
+                        tint = Color(Theme.get("toolbar.button.enabled.glyph").toColorInt()),
+                        modifier = Modifier.padding(6.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.fillMaxWidth())
+            }
+
+            var expanded by remember { mutableStateOf(false) }
+            ActionButton(
+                active = expanded,
+                modifier = Modifier
+                    .onClick {
+                        val x = editor.location.x + editor.width
+                        val y = editor.location.y
+                        windowState.position = WindowPosition(
+                            x = x.dp,
+                            y = y.dp,
+                        )
+                        expanded = !expanded
+                    }
+            ){
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = Color(Theme.get("toolbar.button.enabled.glyph").toColorInt()),
+                    modifier = Modifier.padding(6.dp)
+                )
+            }
+            Window(
+                visible = expanded,
+                onCloseRequest = {
+                    expanded = false
+                },
+                resizable = true,
+                title = "Sketch Settings",
+                state = windowState,
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Chip(onClick = {
+                        editor.service.active.value = false
+                    }) {
+                        Text("Switch back to legacy")
+                    }
+                }
+            }
+        }
+
+    }
+
+    @OptIn(ExperimentalComposeUiApi::class)
+    @Composable
+    fun SketchButtons() {
+        val available = editor.service.availableTasks.count()
+        val finished = editor.service.finishedTasks.count()
+        val isRunning = editor.service.running.value
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ActionButton(
                 active = isRunning,
                 modifier = Modifier
-                    .onPointerEvent(PointerEventType.Press){
+                    .onPointerEvent(PointerEventType.Press) {
                         editor.service.run()
                     }
                     .padding(2.dp)
             ) {
                 val color = LocalContentColor.current
                 Fading(visible = isRunning) {
-                    if(finished == 0) {
+                    if (finished == 0) {
                         CircularProgressIndicator(
                             color = color,
                             strokeCap = StrokeCap.Round,
                             strokeWidth = 3.dp
                         )
-                    }else{
+                    } else {
                         CircularProgressIndicator(
                             progress = finished.toFloat() / available,
                             color = color,
@@ -112,10 +265,10 @@ class Toolbar(val editor: Editor) {
             Fading(visible = isRunning) {
                 ActionButton(
                     modifier = Modifier
-                        .onPointerEvent(PointerEventType.Press){
+                        .onPointerEvent(PointerEventType.Press) {
                             editor.service.stop()
                         }
-                ){
+                ) {
                     val color = LocalContentColor.current
                     Box(
                         modifier = Modifier
@@ -127,82 +280,82 @@ class Toolbar(val editor: Editor) {
             }
         }
     }
-}
 
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun ActionButton(modifier: Modifier = Modifier, active: Boolean = false, content: @Composable () -> Unit){
-    val baseColor = Theme.get("toolbar.button.enabled.field")
-    val baseTextColor = Theme.get("toolbar.button.enabled.glyph")
+    @OptIn(ExperimentalComposeUiApi::class)
+    @Composable
+    fun ActionButton(modifier: Modifier = Modifier, active: Boolean = false, content: @Composable () -> Unit) {
+        val baseColor = Theme.get("toolbar.button.enabled.field")
+        val baseTextColor = Theme.get("toolbar.button.enabled.glyph")
 
-    var hover by remember{ mutableStateOf(false) }
-    val hoverColor = Theme.get("toolbar.button.rollover.field")
-    val hoverTextColor = Theme.get("toolbar.button.rollover.glyph")
+        var hover by remember { mutableStateOf(false) }
+        val hoverColor = Theme.get("toolbar.button.rollover.field")
+        val hoverTextColor = Theme.get("toolbar.button.rollover.glyph")
 
-    var pressed by remember{ mutableStateOf(false) }
-    val pressedColor = Theme.get("toolbar.button.pressed.field")
-    val pressedTextColor = Theme.get("toolbar.button.pressed.glyph")
+        var pressed by remember { mutableStateOf(false) }
+        val pressedColor = Theme.get("toolbar.button.pressed.field")
+        val pressedTextColor = Theme.get("toolbar.button.pressed.glyph")
 
-    val activeColor = Theme.get("toolbar.button.selected.field")
-    val activeTextColor = Theme.get("toolbar.button.pressed.glyph")
+        val activeColor = Theme.get("toolbar.button.selected.field")
+        val activeTextColor = Theme.get("toolbar.button.pressed.glyph")
 
-    val color = when {
-        active -> activeColor
-        pressed -> pressedColor
-        hover -> hoverColor
-        else -> baseColor
-    }.toColorInt()
+        val color = when {
+            active -> activeColor
+            pressed -> pressedColor
+            hover -> hoverColor
+            else -> baseColor
+        }.toColorInt()
 
-    val textColor = when{
-        active -> activeTextColor
-        pressed -> pressedTextColor
-        hover -> hoverTextColor
-        else -> baseTextColor
-    }
+        val textColor = when {
+            active -> activeTextColor
+            pressed -> pressedTextColor
+            hover -> hoverTextColor
+            else -> baseTextColor
+        }
 
-    Box(
-        modifier = Modifier
-            .onPointerEvent(PointerEventType.Enter) {
-                hover = true
+        Box(
+            modifier = Modifier
+                .onPointerEvent(PointerEventType.Enter) {
+                    hover = true
+                }
+                .onPointerEvent(PointerEventType.Exit) {
+                    hover = false
+                }
+                .onPointerEvent(PointerEventType.Press) {
+                    pressed = true
+                }
+                .onPointerEvent(PointerEventType.Release) {
+                    pressed = false
+                }
+                .height(34.dp)
+                .clip(CircleShape)
+                .aspectRatio(1f)
+                .background(color = Color(color))
+                .then(modifier)
+        ) {
+            CompositionLocalProvider(LocalContentColor provides Color(textColor.toColorInt())) {
+                content()
             }
-            .onPointerEvent(PointerEventType.Exit) {
-                hover = false
-            }
-            .onPointerEvent(PointerEventType.Press) {
-                pressed = true
-            }
-            .onPointerEvent(PointerEventType.Release) {
-                pressed = false
-            }
-            .height(34.dp)
-            .clip(CircleShape)
-            .aspectRatio(1f)
-            .background(color = Color(color))
-            .then(modifier)
-    ) {
-        CompositionLocalProvider(LocalContentColor provides Color(textColor.toColorInt())) {
-            content()
         }
     }
-}
 
-@Composable
-fun Fading(visible: Boolean, content: @Composable () -> Unit) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(
-            animationSpec = tween(
-                durationMillis = 250,
-                easing = LinearEasing
+    @Composable
+    fun Fading(visible: Boolean, content: @Composable () -> Unit) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(
+                animationSpec = tween(
+                    durationMillis = 250,
+                    easing = LinearEasing
+                )
+            ),
+            exit = fadeOut(
+                animationSpec = tween(
+                    durationMillis = 250,
+                    easing = LinearEasing
+                )
             )
-        ),
-        exit = fadeOut(
-            animationSpec = tween(
-                durationMillis = 250,
-                easing = LinearEasing
-            )
-        )
-    ) {
-        content()
+        ) {
+            content()
+        }
     }
 }

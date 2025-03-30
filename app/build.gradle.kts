@@ -55,7 +55,7 @@ compose.desktop {
             "processing.contributions.source" to "https://contributions.processing.org/contribs",
             "processing.download.page" to "https://processing.org/download/",
             "processing.download.latest" to "https://processing.org/download/latest.txt",
-            "processing.tutorials" to "https://processing.org/tutorials/",
+            "processing.tutorials" to "https://processing.org/tutorials/"
         )
 
         jvmArgs(*variables.entries.map { "-D${it.key}=${it.value}" }.toTypedArray())

@@ -499,6 +499,9 @@ public abstract class Editor extends JFrame implements RunnerListener {
 
   public void rebuildModePopup() {
     modePopup = new JMenu();
+
+
+
     ButtonGroup modeGroup = new ButtonGroup();
     for (final Mode m : base.getModeList()) {
       JRadioButtonMenuItem item = new JRadioButtonMenuItem(m.getTitle());
@@ -521,6 +524,13 @@ public abstract class Editor extends JFrame implements RunnerListener {
     JMenuItem manageModes = new JMenuItem(Language.text("toolbar.manage_modes"));
     manageModes.addActionListener(e -> ContributionManager.openModes());
     modePopup.add(manageModes);
+
+    JMenuItem enableModern = new JMenuItem(Language.text("toolbar.enable_modern"));
+    enableModern.addActionListener(e -> {
+      this.service.setEnabled(true);
+    });
+    modePopup.addSeparator();
+    modePopup.add(enableModern);
 
     Toolkit.setMenuMnemsInside(modePopup);
   }

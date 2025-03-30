@@ -6,7 +6,6 @@ import com.sun.jdi.Bootstrap
 import com.sun.jdi.VirtualMachine
 import com.sun.jdi.connect.AttachingConnector
 import kotlinx.coroutines.*
-import org.gradle.internal.logging.events.OutputEvent
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
@@ -26,11 +25,14 @@ import javax.swing.event.DocumentListener
 import kotlin.io.path.writeText
 
 // TODO: Remove dependency on editor
+// TODO: Move to jobs system
+// TODO: Improve progress tracking
 class GradleService(val editor: Editor) {
+    val active = mutableStateOf(true)
     val availableTasks = mutableStateListOf<String>()
     val finishedTasks = mutableStateListOf<String>()
     val running = mutableStateOf(false)
-    var vm: VirtualMachine? = null
+    var vm = mutableStateOf<VirtualMachine?>(null)
     val debugPort = (30000..60000).random()
     val problems = mutableStateListOf<ProblemEvent>()
 
@@ -42,6 +44,14 @@ class GradleService(val editor: Editor) {
     private var cancel = GradleConnector.newCancellationTokenSource()
 
     val folder: File get() = editor.sketch.folder
+
+    // Hooks for java to check if the Gradle service is running
+    fun getEnabled(): Boolean {
+        return active.value
+    }
+    fun setEnabled(active: Boolean) {
+        this.active.value = active
+    }
 
     fun prepare(){
         Messages.log("Preparing sketch")
@@ -164,9 +174,9 @@ class GradleService(val editor: Editor) {
                 ?: return@ProgressListener
             val args = connector.defaultArguments()
             args["port"]?.setValue(debugPort.toString())
-            val vm = connector.attach(args)
-            this@GradleService.vm = vm
-            Messages.log("Attached to VM: ${vm.name()}")
+            val sketch = connector.attach(args)
+            vm.value = sketch
+            Messages.log("Attached to VM: ${sketch.name()}")
         })
         return this
     }
@@ -182,7 +192,7 @@ class GradleService(val editor: Editor) {
                 finishedTasks.add(name)
             }
             if(event is DefaultSingleProblemEvent){
-                Messages.log("")
+                problems.add(event)
             }
         })
         return this
