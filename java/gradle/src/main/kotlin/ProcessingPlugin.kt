@@ -46,7 +46,9 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         prefs.setProperty("export.application.stop", "false")
         if(preferences.exists()) prefs.store(preferences.outputStream(), null)
 
-        val sketchbook = prefs.getProperty("sketchbook.path.four") ?: ("${System.getProperty("user.home")}/.processing")
+        val sketchbook = project.findProperty("processing.sketchbook") as String?
+                                ?: prefs.getProperty("sketchbook.path.four")
+                                ?: ("${System.getProperty("user.home")}/.processing")
 
         // Apply the Java plugin to the Project
         project.plugins.apply(JavaPlugin::class.java)

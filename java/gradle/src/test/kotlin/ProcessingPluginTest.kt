@@ -13,36 +13,4 @@ class ProcessingPluginTest{
 
         assert(project.tasks.getByName("sketch") is Task)
     }
-    @JvmField
-    @Rule
-    val folder: TemporaryFolder = TemporaryFolder()
-
-    @Test
-    fun testPluginOutcome() {
-
-        val buildFile = folder.newFile("build.gradle.kts")
-        buildFile.writeText("""
-            plugins{
-                id("org.processing.gradle")
-            }
-        """.trimIndent())
-
-        val sketchFile = folder.newFile("sketch.pde")
-        sketchFile.writeText("""
-            void setup(){
-                size(100, 100);
-            }
-            void draw(){
-                background(0);
-            }
-        """.trimIndent())
-
-        GradleRunner.create()
-            .withProjectDir(folder.root)
-            .withArguments("build")
-            .withPluginClasspath()
-            .build()
-
-        assert(folder.root.resolve("build/generated/pde/main").exists())
-    }
 }

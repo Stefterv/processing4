@@ -11,6 +11,7 @@ import java.nio.file.Path
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
+//TODO: Move to java mode
 class ScreenshotService {
     companion object{
         fun takeScreenshot(vm: VirtualMachine, onComplete: (Path) -> Unit) {

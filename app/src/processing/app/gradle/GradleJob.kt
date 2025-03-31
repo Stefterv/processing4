@@ -102,16 +102,21 @@ open abstract class GradleJob{
             if(event !is TaskStartEvent) return@ProgressListener
             if(event.descriptor.name != ":run") return@ProgressListener
 
-            Messages.log("Attaching to VM")
-            val connector = Bootstrap.virtualMachineManager().allConnectors()
-                .firstOrNull { it.name() == "com.sun.jdi.SocketAttach" }
-                    as AttachingConnector?
-                ?: return@ProgressListener
-            val args = connector.defaultArguments()
-            args["port"]?.setValue(service?.debugPort.toString())
-            val sketch = connector.attach(args)
-            vm.value = sketch
-            Messages.log("Attached to VM: ${sketch.name()}")
+            // TODO: Why doesn't the debugger attach if not run with a debugger itself?
+            try {
+                Messages.log("Attaching to VM")
+                val connector = Bootstrap.virtualMachineManager().allConnectors()
+                    .firstOrNull { it.name() == "com.sun.jdi.SocketAttach" }
+                        as AttachingConnector?
+                    ?: throw IllegalStateException("No socket attach connector found")
+                val args = connector.defaultArguments()
+                args["port"]?.setValue(service?.debugPort.toString())
+                val sketch = connector.attach(args)
+                vm.value = sketch
+                Messages.log("Attached to VM: ${sketch.name()}")
+            }catch (e: Exception){
+                Messages.log("Error while attaching to VM: ${e.message}")
+            }
         })
         return this
     }

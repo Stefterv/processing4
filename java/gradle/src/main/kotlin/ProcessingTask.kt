@@ -10,6 +10,8 @@ import java.util.concurrent.Callable
 import java.util.jar.JarFile
 import javax.inject.Inject
 
+
+// TODO: Rename to PDE Task
 abstract class ProcessingTask : SourceTask() {
     @get:OutputDirectory
     var outputDirectory: File? = null
@@ -33,10 +35,10 @@ abstract class ProcessingTask : SourceTask() {
 
     @TaskAction
     fun execute(inputChanges: InputChanges) {
-        // Using stableSources since we can only run the pre-processor on the full set of sources
-        // TODO: Allow pre-processor to run on individual files
+        // TODO: Allow pre-processor to run on individual files (future)
+        // TODO: Only compare file names from both defined roots (e.g. sketch.pde and folder/sketch.pde should both be included)
 
-        // TODO: Only compare file names from both defined roots
+        // Using stableSources since we can only run the pre-processor on the full set of sources
         val combined = stableSources
             .files
             .groupBy { it.name }
@@ -58,8 +60,10 @@ abstract class ProcessingTask : SourceTask() {
         javaFile.flush()
         javaFile.close()
 
-        // Scan all the libaries in the sketchbook
         // TODO: Move scanning the libraries to a separate task to avoid running this every time
+        // TODO: Support library changes
+        // TODO: Add internal libraries (dxf, serial, etc..)
+        // Scan all the libaries in the sketchbook
         val libraries = File(sketchBook, "libraries")
             .listFiles { file -> file.isDirectory }
             ?.map { folder ->

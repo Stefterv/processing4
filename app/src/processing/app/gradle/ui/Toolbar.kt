@@ -119,6 +119,7 @@ class Toolbar(val editor: Editor) {
 
             }
 
+            //TODO: Indicate waiting for vm connection to be ready
             val vm = editor.service.jobs.lastOrNull()?.vm?.value
             vm?.apply {
                 ActionButton(

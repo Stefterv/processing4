@@ -255,7 +255,6 @@ tasks.register("generateSnapConfiguration"){
           - openjdk-17-jre
         override-prime: |
           snapcraftctl prime
-          chmod -R +x opt/processing/lib/app/resources/jdk-*
           rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/cacerts
     """.trimIndent()
     dir.file("../snapcraft.yaml").asFile.writeText(content)
@@ -271,7 +270,7 @@ tasks.register<Exec>("packageSnap"){
     commandLine("snapcraft")
 }
 tasks.register<Zip>("zipDistributable"){
-    dependsOn("createDistributable", "setExecutablePermissions")
+    dependsOn("createDistributable")
     group = "compose desktop"
 
     val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
