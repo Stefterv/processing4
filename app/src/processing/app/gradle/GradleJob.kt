@@ -7,6 +7,7 @@ import com.sun.jdi.VirtualMachine
 import com.sun.jdi.connect.AttachingConnector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
@@ -15,6 +16,8 @@ import org.gradle.tooling.events.problems.ProblemEvent
 import org.gradle.tooling.events.task.TaskFinishEvent
 import org.gradle.tooling.events.task.TaskStartEvent
 import processing.app.Messages
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 // TODO: Capture and filter gradle output
 open abstract class GradleJob{
@@ -75,6 +78,7 @@ open abstract class GradleJob{
                 when(event.descriptor.name) {
                     ":run" -> {
                         state.value = State.RUNNING
+                        Messages.log("Start run")
                     }
                 }
 
@@ -99,22 +103,36 @@ open abstract class GradleJob{
 
     private fun BuildLauncher.addDebugging(): BuildLauncher{
         this.addProgressListener(ProgressListener { event ->
-            if(event !is TaskStartEvent) return@ProgressListener
-            if(event.descriptor.name != ":run") return@ProgressListener
+            if (event !is TaskStartEvent) return@ProgressListener
+            if (event.descriptor.name != ":run") return@ProgressListener
 
-            // TODO: Why doesn't the debugger attach if not run with a debugger itself?
             try {
-                Messages.log("Attaching to VM")
+                val port = service?.debugPort.toString()
+                Messages.log("Attaching to VM $port")
                 val connector = Bootstrap.virtualMachineManager().allConnectors()
                     .firstOrNull { it.name() == "com.sun.jdi.SocketAttach" }
                         as AttachingConnector?
                     ?: throw IllegalStateException("No socket attach connector found")
                 val args = connector.defaultArguments()
-                args["port"]?.setValue(service?.debugPort.toString())
-                val sketch = connector.attach(args)
-                vm.value = sketch
-                Messages.log("Attached to VM: ${sketch.name()}")
-            }catch (e: Exception){
+                args["port"]?.setValue(port)
+
+                // Try to attach the debugger, retrying if it fails
+                scope.launch {
+                    val start = TimeSource.Monotonic.markNow()
+                    while (start.elapsedNow() < 10.seconds) {
+                        try {
+                            val sketch = connector.attach(args)
+                            vm.value = sketch
+                            break
+                            Messages.log("Attached to VM: ${sketch.name()}")
+                        } catch (e: Exception) {
+                            Messages.log("Error while attaching to VM: ${e.message}... Retrying")
+                        }
+                        delay(250)
+                    }
+                    if(vm.value == null) throw IllegalStateException("Failed to attach to VM after 10 seconds")
+                }
+            } catch (e: Exception) {
                 Messages.log("Error while attaching to VM: ${e.message}")
             }
         })

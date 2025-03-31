@@ -229,11 +229,11 @@ class GradleService(val editor: Editor) {
     }
 
 
-    private fun BuildLauncher.setup(extraArguments: List<String> = listOf()): BuildLauncher {
+    private fun BuildLauncher.setup(extraArguments: List<String> = listOf()) {
+        setJavaHome(Platform.getJavaHome())
+
         val arguments = setupGradle()
         arguments.addAll(extraArguments)
-        return this
-            .setJavaHome(Platform.getJavaHome())
-            .withArguments(*arguments.toTypedArray())
+        withArguments(*arguments.toTypedArray())
     }
 }
