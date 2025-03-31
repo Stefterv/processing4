@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
-import processing.app.gradle.ActionGradleJob
+import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.gradle.GradleJob
 import processing.app.gradle.ScreenshotService
 import processing.app.ui.Editor

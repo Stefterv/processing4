@@ -115,7 +115,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 application.mainClass = sketchName
                 application.nativeDistributions.modules("java.management")
                 if(debugPort != null) {
-                    application.jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$debugPort")
+                    application.jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$debugPort")
                 }
             }
         }

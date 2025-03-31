@@ -11,6 +11,8 @@ import org.gradle.tooling.ProjectConnection
 import processing.app.Base
 import processing.app.Messages
 import processing.app.Platform
+import processing.app.gradle.helpers.ActionGradleJob
+import processing.app.gradle.helpers.BackgroundGradleJob
 import processing.app.ui.Editor
 import java.io.*
 import javax.swing.SwingUtilities
@@ -20,10 +22,9 @@ import kotlin.io.path.writeText
 
 // TODO: Remove dependency on editor (editor is not mockable, or move editor away from JFrame)
 // TODO: Improve progress tracking
-// TODO: Improve error reporting
 // TODO: PoC new debugger/tweak mode
-
-
+// TODO: Allow for plugins to skip gradle entirely
+// TODO: Improve background building
 // The gradle service runs the gradle tasks and manages the gradle connection
 // It will create the necessary build files for gradle to run
 class GradleService(val editor: Editor) {
@@ -57,7 +58,7 @@ class GradleService(val editor: Editor) {
         startBuilding()
     }
 
-    // TODO: Improve background building
+
     fun startBuilding(){
         scope.launch {
             // TODO: Improve the experience with unsaved
@@ -67,10 +68,6 @@ class GradleService(val editor: Editor) {
                 setup()
                 forTasks("jar")
                 addArguments("--continuous")
-                if (Base.DEBUG){
-                    setStandardError(editor.console.err)
-                    setStandardOutput(editor.console.out)
-                }
             }
             job.start()
         }
@@ -100,28 +97,26 @@ class GradleService(val editor: Editor) {
     }
     fun run(){
         stopActions()
+        editor.console.clear()
 
         val job = ActionGradleJob()
         job.service = this
         job.configure = {
             setup()
             forTasks("run")
-            setStandardError(editor.console.err)
-            if (Base.DEBUG) setStandardOutput(editor.console.out)
         }
         job.start()
     }
 
     fun export(){
         stopActions()
+        editor.console.clear()
 
         val job = ActionGradleJob()
         job.service = this
         job.configure = {
             setup()
             forTasks("runDistributable")
-            setStandardError(editor.console.err)
-            if (Base.DEBUG) setStandardOutput(editor.console.out)
         }
         job.start()
     }
