@@ -12,6 +12,7 @@ import javax.inject.Inject
 
 
 // TODO: Rename to PDE Task
+// TODO: Generate sourcemaps
 abstract class ProcessingTask : SourceTask() {
     @get:OutputDirectory
     var outputDirectory: File? = null

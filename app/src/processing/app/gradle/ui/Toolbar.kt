@@ -5,17 +5,12 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -29,11 +24,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.res.loadSvgPainter
+import androidx.compose.ui.res.useResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
+import groovyjarjarantlr4.v4.runtime.misc.Args
 import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.gradle.GradleJob
 import processing.app.gradle.ScreenshotService
@@ -44,7 +43,7 @@ import processing.app.ui.theme.toColorInt
 import java.io.File
 import javax.swing.JComponent
 
-class Toolbar(val editor: Editor) {
+class Toolbar(val editor: Editor?) {
     companion object {
         @JvmStatic
         fun legacyWrapped(editor: Editor, toolbar: EditorToolbar): JComponent {
@@ -63,6 +62,10 @@ class Toolbar(val editor: Editor) {
             }
 
             return panel
+        }
+        @JvmStatic
+        fun main(args: Array<String>) {
+            
         }
     }
 
@@ -117,67 +120,92 @@ class Toolbar(val editor: Editor) {
 
             }
 
-            //TODO: Indicate waiting for vm connection to be ready
-            val vm = editor.service.jobs.lastOrNull()?.vm?.value
-            // TODO: Fade in
-            // TODO: Set icon
-            vm?.apply {
-                ActionButton(
-                    modifier = Modifier
-                        .onClick {
-                            ScreenshotService.takeScreenshot(this) { file ->
+            Row {
+                hoverPill(actions = {
+                    actionButton(
+                        onClick = {
+
+                        }
+                    ) {
+                        val icon = useResource("toolbar/Settings.svg") { loadSvgPainter(it, Density(1f)) }
+                        val color = LocalContentColor.current
+                        Icon(
+                            painter = icon,
+                            contentDescription = "Settings",
+                            tint = color
+                        )
+                    }
+                    val vm = editor?.service?.jobs?.lastOrNull()?.vm?.value
+                    actionButton(
+                        enabled = vm != null,
+                        onClick = {
+                            vm ?: return@actionButton
+                            ScreenshotService.takeScreenshot(vm) { file ->
                                 screenshot = file.toFile()
                             }
                         }
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Share,
-                        contentDescription = "Settings",
-                        tint = Color(Theme.get("toolbar.button.enabled.glyph").toColorInt()),
-                        modifier = Modifier.padding(6.dp)
-                    )
-                }
-
-            }
-
-            // TODO: Set icon
-            var expanded by remember { mutableStateOf(false) }
-            ActionButton(
-                active = expanded,
-                modifier = Modifier
-                    .onClick {
-                        val x = editor.location.x + editor.width
-                        val y = editor.location.y
-                        windowState.position = WindowPosition(
-                            x = x.dp,
-                            y = y.dp,
+                    ) {
+                        val icon = useResource("toolbar/Screenshot.svg") { loadSvgPainter(it, Density(1f)) }
+                        val color = LocalContentColor.current
+                        Icon(
+                            painter = icon,
+                            contentDescription = "Screenshot",
+                            tint = color
                         )
-                        expanded = !expanded
                     }
-            ){
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Settings",
-                    tint = Color(Theme.get("toolbar.button.enabled.glyph").toColorInt()),
-                    modifier = Modifier.padding(6.dp)
-                )
-            }
-            Window(
-                visible = expanded,
-                onCloseRequest = {
-                    expanded = false
-                },
-                resizable = true,
-                title = "Sketch Settings",
-                state = windowState,
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Chip(onClick = {
-                        editor.service.active.value = false
-                    }) {
-                        Text("Switch back to legacy")
+
+
+                    var expanded by remember { mutableStateOf(false) }
+                    actionButton(
+                        active = expanded,
+                        modifier = Modifier
+                            .onClick {
+                                editor ?: return@onClick
+                                val x = editor.location.x + editor.width
+                                val y = editor.location.y
+                                windowState.position = WindowPosition(
+                                    x = x.dp,
+                                    y = y.dp,
+                                )
+                                expanded = !expanded
+                            }
+                    ) {
+                        val icon = useResource("toolbar/Sketch Settings.svg") { loadSvgPainter(it, Density(1f)) }
+                        val color = LocalContentColor.current
+                        Icon(
+                            painter = icon,
+                            contentDescription = "Sketch Settings",
+                            tint = color
+                        )
                     }
-                }
+                    Window(
+                        visible = expanded,
+                        onCloseRequest = {
+                            expanded = false
+                        },
+                        resizable = true,
+                        title = "Sketch Settings",
+                        state = windowState,
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Chip(onClick = {
+                                editor?.service?.active?.value = false
+                            }) {
+                                Text("Switch back to legacy")
+                            }
+                        }
+                    }
+                }, base = {
+                    actionButton {
+                        val icon = useResource("toolbar/More.svg") { loadSvgPainter(it, Density(1f)) }
+                        val color = LocalContentColor.current
+                        Icon(
+                            painter = icon,
+                            contentDescription = "More",
+                            tint = color
+                        )
+                    }
+                })
             }
         }
 
@@ -186,15 +214,15 @@ class Toolbar(val editor: Editor) {
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     fun SketchButtons() {
-        val job = editor.service.jobs.filterIsInstance<ActionGradleJob>().lastOrNull()
+        val job = editor?.service?.jobs?.filterIsInstance<ActionGradleJob>()?.lastOrNull()
         val state = job?.state?.value ?: GradleJob.State.NONE
         val isActive = state != GradleJob.State.NONE && state != GradleJob.State.DONE
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ActionButton(
+            actionButton(
                 active = isActive,
                 modifier = Modifier
                     .onPointerEvent(PointerEventType.Press) {
-                        editor.service.run()
+                        editor?.service?.run()
                     }
                     .padding(2.dp)
             ) {
@@ -207,27 +235,26 @@ class Toolbar(val editor: Editor) {
                         strokeWidth = 3.dp
                     )
                 }
-                Box(modifier = Modifier.padding(4.dp)) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play",
-                        tint = color
-                    )
-                }
+                val icon = useResource("toolbar/Play.svg") { loadSvgPainter(it, Density(1f)) }
+                Icon(
+                    painter = icon,
+                    contentDescription = "Play",
+                    tint = color
+                )
             }
             Fading(visible = isActive) {
-                ActionButton(
+                actionButton(
                     modifier = Modifier
                         .onPointerEvent(PointerEventType.Press) {
-                            editor.service.stop()
+                            editor?.service?.stop()
                         }
                 ) {
+                    val icon = useResource("toolbar/Stop.svg") { loadSvgPainter(it, Density(1f)) }
                     val color = LocalContentColor.current
-                    Box(
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .size(12.dp)
-                            .background(color)
+                    Icon(
+                        painter = icon,
+                        contentDescription = "Stop",
+                        tint = color
                     )
                 }
             }
@@ -236,7 +263,38 @@ class Toolbar(val editor: Editor) {
 
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    fun ActionButton(modifier: Modifier = Modifier, active: Boolean = false, content: @Composable () -> Unit) {
+    fun hoverPill(actions: @Composable () -> Unit, base: @Composable () -> Unit) {
+        var hover by remember { mutableStateOf(false) }
+        val baseColor = Theme.get("toolbar.button.enabled.field").toColorInt().let { Color(it) }
+
+        Row(
+            modifier = Modifier
+                .onPointerEvent(PointerEventType.Enter) {
+                    hover = true
+                }
+                .onPointerEvent(PointerEventType.Exit) {
+                    hover = false
+                }
+                .clip(CircleShape)
+                .background(baseColor)
+
+
+        ){
+            if(hover) actions()
+            base()
+        }
+    }
+
+
+    @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+    @Composable
+    fun actionButton(
+        modifier: Modifier = Modifier,
+        enabled: Boolean = true,
+        active: Boolean = false,
+        onClick: () -> Unit = {},
+        content: @Composable () -> Unit
+    ) {
         val baseColor = Theme.get("toolbar.button.enabled.field")
         val baseTextColor = Theme.get("toolbar.button.enabled.glyph")
 
@@ -283,6 +341,11 @@ class Toolbar(val editor: Editor) {
                 .clip(CircleShape)
                 .aspectRatio(1f)
                 .background(color = Color(color))
+                .onClick{
+                    if (enabled) {
+                        onClick()
+                    }
+                }
                 .then(modifier)
         ) {
             CompositionLocalProvider(LocalContentColor provides Color(textColor.toColorInt())) {

@@ -394,6 +394,9 @@ public abstract class Editor extends JFrame implements RunnerListener {
     return ef;
   }
 
+  public EditorFooter getFooter() {
+    return footer;
+  }
 
   public void addErrorTable(EditorFooter ef) {
     JScrollPane scrollPane = new JScrollPane();
