@@ -34,10 +34,21 @@ dependencies {
 
     testImplementation(libs.junit)
 }
+publishing{
+    repositories{
+        maven {
+            name = "App"
+            url = uri(project(":app").layout.buildDirectory.dir("resources-bundled/common/repository").get().asFile.absolutePath)
+        }
+    }
+}
 
 mavenPublishing{
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    signAllPublications()
+
+    // Only sign if signing is set up
+    if(project.hasProperty("signing.keyId") || project.hasProperty("signing.signingInMemoryKey"))
+        signAllPublications()
 
     pom{
         name.set("Processing Core")
@@ -75,5 +86,8 @@ tasks.withType<Jar> {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 tasks.compileJava{
+    options.encoding = "UTF-8"
+}
+tasks.javadoc{
     options.encoding = "UTF-8"
 }

@@ -1,9 +1,10 @@
+import org.gradle.internal.jvm.Jvm
 import org.gradle.kotlin.dsl.support.zipTo
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.Download
-import org.jetbrains.kotlin.fir.scopes.impl.overrides
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -49,17 +50,21 @@ compose.desktop {
     application {
         mainClass = "processing.app.ui.Start"
 
-        jvmArgs(*listOf(
-            Pair("processing.version", rootProject.version),
-            Pair("processing.revision", findProperty("revision") ?: Int.MAX_VALUE),
-            Pair("processing.contributions.source", "https://contributions.processing.org/contribs"),
-            Pair("processing.download.page", "https://processing.org/download/"),
-            Pair("processing.download.latest", "https://processing.org/download/latest.txt"),
-            Pair("processing.tutorials", "https://processing.org/tutorials/"),
-        ).map { "-D${it.first}=${it.second}" }.toTypedArray())
+
+        val variables = mapOf(
+            "processing.group" to (rootProject.group.takeIf { it != "" } ?: "processing"),
+            "processing.version" to rootProject.version,
+            "processing.revision" to (findProperty("revision") ?: Int.MAX_VALUE),
+            "processing.contributions.source" to "https://contributions.processing.org/contribs",
+            "processing.download.page" to "https://processing.org/download/",
+            "processing.download.latest" to "https://processing.org/download/latest.txt",
+            "processing.tutorials" to "https://processing.org/tutorials/"
+        )
+
+        jvmArgs(*variables.entries.map { "-D${it.key}=${it.value}" }.toTypedArray())
 
         nativeDistributions{
-            modules("jdk.jdi", "java.compiler", "jdk.accessibility", "java.management.rmi")
+            modules("jdk.jdi", "java.compiler", "jdk.accessibility", "jdk.zipfs", "java.management.rmi")
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Processing"
 
@@ -97,6 +102,7 @@ compose.desktop {
 
 dependencies {
     implementation(project(":core"))
+    runtimeOnly(project(":java"))
 
     implementation(libs.flatlaf)
 
@@ -109,6 +115,7 @@ dependencies {
     implementation(compose.ui)
     implementation(compose.components.resources)
     implementation(compose.components.uiToolingPreview)
+    implementation(compose.materialIconsExtended)
 
     implementation(compose.desktop.currentOs)
 
@@ -121,6 +128,10 @@ dependencies {
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.junitJupiter)
     testImplementation(libs.junitJupiterParams)
+
+    implementation(gradleApi())
+    @OptIn(ExperimentalComposeLibrary::class)
+    testImplementation(compose.uiTest)
 }
 
 tasks.test {
@@ -250,7 +261,6 @@ tasks.register("generateSnapConfiguration"){
           - openjdk-17-jre
         override-prime: |
           snapcraftctl prime
-          chmod -R +x opt/processing/lib/app/resources/jdk-*
           rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/cacerts
     """.trimIndent()
     dir.file("../snapcraft.yaml").asFile.writeText(content)
@@ -266,7 +276,7 @@ tasks.register<Exec>("packageSnap"){
     commandLine("snapcraft")
 }
 tasks.register<Zip>("zipDistributable"){
-    dependsOn("createDistributable", "setExecutablePermissions")
+    dependsOn("createDistributable")
     group = "compose desktop"
 
     val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
@@ -298,8 +308,14 @@ afterEvaluate{
         }
         dependsOn("packageSnap", "zipDistributable")
     }
+    tasks.named("prepareAppResources").configure {
+        dependsOn(
+            ":core:publishAllPublicationsToAppRepository",
+            ":java:gradle:publishAllPublicationsToAppRepository",
+            ":java:preprocessor:publishAllPublicationsToAppRepository"
+        )
+    }
 }
-
 
 // LEGACY TASKS
 // Most of these are shims to be compatible with the old build system
@@ -321,41 +337,6 @@ tasks.register<Copy>("includeJavaMode") {
     from(java.configurations.runtimeClasspath)
     into(composeResources("modes/java/mode"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-tasks.register<Download>("includeJdk") {
-    val os = DefaultNativePlatform.getCurrentOperatingSystem()
-    val arch = when (System.getProperty("os.arch")) {
-        "amd64", "x86_64" -> "x64"
-        else -> System.getProperty("os.arch")
-    }
-    val platform = when {
-        os.isWindows -> "windows"
-        os.isMacOsX -> "mac"
-        else -> "linux"
-    }
-
-    val javaVersion = System.getProperty("java.version").split(".")[0]
-    val imageType = "jdk"
-
-    src("https://api.adoptium.net/v3/binary/latest/" +
-            "$javaVersion/ga/" +
-            "$platform/" +
-            "$arch/" +
-            "$imageType/" +
-            "hotspot/normal/eclipse?project=jdk")
-
-    val extension = if (os.isWindows) "zip" else "tar.gz"
-    val jdk = layout.buildDirectory.file("tmp/jdk-$platform-$arch.$extension")
-    dest(jdk)
-    overwrite(false)
-    doLast {
-        copy {
-            val archive = if (os.isWindows) { zipTree(jdk) } else { tarTree(jdk) }
-            from(archive){ eachFile{ permissions{ unix("755") } } }
-            into(composeResources(""))
-        }
-    }
-    finalizedBy("prepareAppResources")
 }
 tasks.register<Copy>("includeSharedAssets"){
     from("../build/shared/")
@@ -401,21 +382,26 @@ tasks.register<Copy>("includeJavaModeResources") {
     from(java.layout.buildDirectory.dir("resources-bundled"))
     into(composeResources("../"))
 }
-tasks.register<Copy>("renameWindres") {
-    dependsOn("includeSharedAssets","includeJavaModeResources")
-    val dir = composeResources("modes/java/application/launch4j/bin/")
-    val os = DefaultNativePlatform.getCurrentOperatingSystem()
-    val platform = when {
-        os.isWindows -> "windows"
-        os.isMacOsX -> "macos"
-        else -> "linux"
+tasks.register("includeJdk") {
+    dependsOn("createDistributable")
+    doFirst {
+        val jdk = Jvm.current().javaHome.absolutePath
+        val target = layout.buildDirectory.dir("compose/binaries").get().asFileTree.matching { include("**/include.jdk") }
+            .files
+            .firstOrNull()
+            ?.parentFile
+            ?.resolve("jdk")
+            ?.absolutePath
+            ?: error("Could not find include.jdk")
+
+        val isWindows = System.getProperty("os.name").lowercase().contains("win")
+        val command = if (isWindows) {
+            listOf("xcopy", "/E", "/I", "/Q", jdk, target)
+        } else {
+            listOf("cp", "-a", jdk, target)
+        }
+        ProcessBuilder(command).inheritIO().start().waitFor()
     }
-    from(dir) {
-        include("*-$platform*")
-        rename("(.*)-$platform(.*)", "$1$2")
-    }
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    into(dir)
 }
 tasks.register("signResources"){
     onlyIf {
@@ -427,18 +413,14 @@ tasks.register("signResources"){
     dependsOn(
         "includeCore",
         "includeJavaMode",
-        "includeJdk",
         "includeSharedAssets",
         "includeProcessingExamples",
         "includeProcessingWebsiteExamples",
         "includeJavaModeResources",
-        "renameWindres"
     )
     finalizedBy("prepareAppResources")
 
     val resourcesPath = composeResources("")
-
-
 
     // find jars in the resources directory
     val jars = mutableListOf<File>()
@@ -505,9 +487,8 @@ tasks.register("signResources"){
         }
         file(composeResources("Info.plist")).delete()
     }
-
-
 }
+
 afterEvaluate {
     tasks.named("prepareAppResources").configure {
         dependsOn(
@@ -516,31 +497,11 @@ afterEvaluate {
             "includeSharedAssets",
             "includeProcessingExamples",
             "includeProcessingWebsiteExamples",
-            "includeJavaModeResources",
-            "renameWindres"
+            "includeJavaModeResources"
         )
     }
-    tasks.register("setExecutablePermissions") {
-        description = "Sets executable permissions on binaries in Processing.app resources"
-        group = "compose desktop"
-
-        doLast {
-            val resourcesPath = layout.buildDirectory.dir("compose/binaries")
-            fileTree(resourcesPath) {
-                include("**/resources/**/bin/**")
-                include("**/resources/**/*.sh")
-                include("**/resources/**/*.dylib")
-                include("**/resources/**/*.so")
-                include("**/resources/**/*.exe")
-            }.forEach { file ->
-                if (file.isFile) {
-                    file.setExecutable(true, false)
-                }
-            }
-        }
-    }
     tasks.named("createDistributable").configure {
-        dependsOn("signResources", "includeJdk")
-        finalizedBy("setExecutablePermissions")
+        dependsOn("signResources")
+        finalizedBy("includeJdk")
     }
 }
