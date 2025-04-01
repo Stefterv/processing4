@@ -46,11 +46,8 @@ import javax.swing.JComponent
 
 class Toolbar(val editor: Editor) {
     companion object {
-        @OptIn(ExperimentalComposeUiApi::class)
         @JvmStatic
         fun legacyWrapped(editor: Editor, toolbar: EditorToolbar): JComponent {
-            // TODO: Somehow override the menubar items as well
-
             val bar = Toolbar(editor)
             val panel = ComposePanel().apply {
                 setContent {
@@ -69,7 +66,8 @@ class Toolbar(val editor: Editor) {
         }
     }
 
-
+    // TODO: Split into multiple files
+    // TODO: Use svgs for icons
     @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
     @Composable
     fun display() {
@@ -121,6 +119,8 @@ class Toolbar(val editor: Editor) {
 
             //TODO: Indicate waiting for vm connection to be ready
             val vm = editor.service.jobs.lastOrNull()?.vm?.value
+            // TODO: Fade in
+            // TODO: Set icon
             vm?.apply {
                 ActionButton(
                     modifier = Modifier
@@ -140,6 +140,7 @@ class Toolbar(val editor: Editor) {
 
             }
 
+            // TODO: Set icon
             var expanded by remember { mutableStateOf(false) }
             ActionButton(
                 active = expanded,
@@ -198,7 +199,7 @@ class Toolbar(val editor: Editor) {
                     .padding(2.dp)
             ) {
                 val color = LocalContentColor.current
-                Fading(visible = state == GradleJob.State.BUILDING) {
+                Fading(visible = state == GradleJob.State.BUILDING, delayMillis = 2_500) {
                     // TODO: Add progress tracking
                     CircularProgressIndicator(
                         color = color,
@@ -289,14 +290,13 @@ class Toolbar(val editor: Editor) {
             }
         }
     }
-
     @Composable
-    fun Fading(visible: Boolean, content: @Composable () -> Unit) {
+    fun Fading(visible: Boolean, delayMillis: Int = 0, content: @Composable () -> Unit) {
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn(
                 animationSpec = tween(
-                    delayMillis = 2_500,
+                    delayMillis = delayMillis,
                     durationMillis = 250,
                     easing = LinearEasing
                 )

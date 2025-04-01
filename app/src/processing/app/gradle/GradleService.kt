@@ -26,6 +26,8 @@ import kotlin.io.path.writeText
 // TODO: PoC new debugger/tweak mode
 // TODO: Allow for plugins to skip gradle entirely
 // TODO: Improve background building
+// TODO: Rename to Service?
+// TODO: Track build speed (for analytics?)
 
 // The gradle service runs the gradle tasks and manages the gradle connection
 // It will create the necessary build files for gradle to run
@@ -63,7 +65,7 @@ class GradleService(val editor: Editor) {
     }
 
 
-    fun startBuilding(){
+    private fun startBuilding(){
         scope.launch {
             // TODO: Improve the experience with unsaved
             val job = BackgroundGradleJob()

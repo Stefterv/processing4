@@ -13,6 +13,7 @@ import kotlin.time.TimeSource
 
 // TODO: Move to java mode
 // TODO: Add more feedback when things go wrong
+// TODO: Check if the sketch has a draw method
 class ScreenshotService {
     companion object{
         fun takeScreenshot(vm: VirtualMachine, onComplete: (Path) -> Unit) {
