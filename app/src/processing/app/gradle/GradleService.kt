@@ -9,6 +9,7 @@ import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import processing.app.Base
+import processing.app.Language
 import processing.app.Messages
 import processing.app.Platform
 import processing.app.gradle.helpers.ActionGradleJob
@@ -25,8 +26,11 @@ import kotlin.io.path.writeText
 // TODO: PoC new debugger/tweak mode
 // TODO: Allow for plugins to skip gradle entirely
 // TODO: Improve background building
+
 // The gradle service runs the gradle tasks and manages the gradle connection
 // It will create the necessary build files for gradle to run
+// Then it will kick off a new GradleJob to run the tasks
+// GradleJob manages the gradle build and connects the debugger
 class GradleService(val editor: Editor) {
     val folder: File get() = editor.sketch.folder
     val active = mutableStateOf(true)
@@ -194,21 +198,41 @@ class GradleService(val editor: Editor) {
 
 
         val buildGradle = folder.resolve("build.gradle.kts")
-        // TODO: Manage script if the comment exists
-        if (!buildGradle.exists()) {
-            Messages.log("build.gradle.kts not found in ${folder}, creating one")
+        val generate = buildGradle.let {
+            if(!it.exists()) return@let true
+
+            val contents = it.readText()
+            if(!contents.contains("@processing-auto-generated")) return@let false
+
+            val version = contents.substringAfter("version=").substringBefore("\n")
+            if(version != Base.getVersionName()) return@let true
+
+            val mode = contents.substringAfter("mode=").substringBefore(" ")
+            if(editor.mode.title != mode) return@let true
+
+            return@let Base.DEBUG
+        }
+        if (generate) {
+            Messages.log("build.gradle.kts not found or outdated in ${folder}, creating one")
+            val header = """
+                // @processing-auto-generated mode=${editor.mode.title} version=${Base.getVersionName()}
+                //
+                """.trimIndent()
+
+            val instructions = Language.text("gradle.instructions")
+                .split("\n")
+                .joinToString("\n") { "// $it" }
+
+            // TODO: Move the current configuration to java mode
             // TODO: Allow for other plugins to be registered
             // TODO: Allow for the whole configuration to be overridden
-            // TODO: Move this to java mode
             // TODO: Define new plugin / mode schema
-            val content = """
-                    // Managed by: Processing ${Base.getVersionName()} ${editor.mode.title}
-                    // If you delete this comment Processing will no longer update the build scripts
-
-                    plugins{
-                        id("org.processing.gradle") version "${Base.getVersionName()}"
-                    }
-                """.trimIndent()
+            val configuration =  """
+                plugins{
+                    id("org.processing.gradle") version "${Base.getVersionName()}"
+                }
+            """.trimIndent()
+            val content = "${header}\n${instructions}\n${configuration}"
             buildGradle.writeText(content)
         }
         val settingsGradle = folder.resolve("settings.gradle.kts")

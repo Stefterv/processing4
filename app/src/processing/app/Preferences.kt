@@ -53,6 +53,7 @@ fun watchFile(file: File): Any? {
                     if (modified.context() != path.fileName) continue
                     event = modified
                 }
+                Thread.sleep(100)
             }
         }
         onDispose {
