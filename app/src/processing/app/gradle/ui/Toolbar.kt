@@ -9,8 +9,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -32,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
-import groovyjarjarantlr4.v4.runtime.misc.Args
 import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.gradle.GradleJob
 import processing.app.gradle.ScreenshotService
@@ -63,14 +60,10 @@ class Toolbar(val editor: Editor?) {
 
             return panel
         }
-        @JvmStatic
-        fun main(args: Array<String>) {
-            
-        }
     }
 
     // TODO: Split into multiple files
-    // TODO: Use svgs for icons
+    // TODO: Make runnable outside of Processing IDE
     @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
     @Composable
     fun display() {
@@ -119,7 +112,7 @@ class Toolbar(val editor: Editor?) {
                 }
 
             }
-
+            var showSketchSettings by remember { mutableStateOf(false) }
             Row {
                 hoverPill(actions = {
                     actionButton(
@@ -155,9 +148,9 @@ class Toolbar(val editor: Editor?) {
                     }
 
 
-                    var expanded by remember { mutableStateOf(false) }
+
                     actionButton(
-                        active = expanded,
+                        active = showSketchSettings,
                         modifier = Modifier
                             .onClick {
                                 editor ?: return@onClick
@@ -167,7 +160,7 @@ class Toolbar(val editor: Editor?) {
                                     x = x.dp,
                                     y = y.dp,
                                 )
-                                expanded = !expanded
+                                showSketchSettings = !showSketchSettings
                             }
                     ) {
                         val icon = useResource("toolbar/Sketch Settings.svg") { loadSvgPainter(it, Density(1f)) }
@@ -178,23 +171,7 @@ class Toolbar(val editor: Editor?) {
                             tint = color
                         )
                     }
-                    Window(
-                        visible = expanded,
-                        onCloseRequest = {
-                            expanded = false
-                        },
-                        resizable = true,
-                        title = "Sketch Settings",
-                        state = windowState,
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Chip(onClick = {
-                                editor?.service?.active?.value = false
-                            }) {
-                                Text("Switch back to legacy")
-                            }
-                        }
-                    }
+
                 }, base = {
                     actionButton {
                         val icon = useResource("toolbar/More.svg") { loadSvgPainter(it, Density(1f)) }
@@ -206,6 +183,25 @@ class Toolbar(val editor: Editor?) {
                         )
                     }
                 })
+
+
+                Window(
+                    visible = showSketchSettings,
+                    onCloseRequest = {
+                        showSketchSettings = false
+                    },
+                    resizable = true,
+                    title = "Sketch Settings",
+                    state = windowState,
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Chip(onClick = {
+                            editor?.service?.active?.value = false
+                        }) {
+                            Text("Switch back to legacy")
+                        }
+                    }
+                }
             }
         }
 

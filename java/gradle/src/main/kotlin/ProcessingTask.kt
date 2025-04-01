@@ -68,7 +68,7 @@ abstract class ProcessingTask : SourceTask() {
         val libraries = File(sketchBook, "libraries")
             .listFiles { file -> file.isDirectory }
             ?.map { folder ->
-                // Find all the jars in the sketch book
+                // Find all the jars in the sketchbook
                 val jars = folder.resolve("library")
                     .listFiles{ file -> file.extension == "jar" }
                     ?.map{ file ->

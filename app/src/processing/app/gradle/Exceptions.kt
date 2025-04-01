@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import processing.app.Messages
 
+// TODO: Consider adding a panel to the footer
 class Exceptions {
     companion object {
         suspend fun listen(vm: VirtualMachine) {
