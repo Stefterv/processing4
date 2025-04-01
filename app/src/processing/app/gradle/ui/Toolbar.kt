@@ -33,15 +33,22 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import groovyjarjarantlr4.v4.runtime.misc.Args
+import processing.app.Language
+import processing.app.Preferences
 import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.gradle.GradleJob
 import processing.app.gradle.ScreenshotService
 import processing.app.ui.Editor
 import processing.app.ui.EditorToolbar
 import processing.app.ui.Theme
+import processing.app.ui.Welcome.Companion.welcome
+import processing.app.ui.theme.PDEWindow
+import processing.app.ui.theme.pdeapplication
 import processing.app.ui.theme.toColorInt
 import java.io.File
+import java.io.IOException
 import javax.swing.JComponent
+import javax.swing.SwingUtilities
 
 class Toolbar(val editor: Editor?) {
     companion object {
@@ -63,14 +70,10 @@ class Toolbar(val editor: Editor?) {
 
             return panel
         }
-        @JvmStatic
-        fun main(args: Array<String>) {
-            
-        }
     }
 
     // TODO: Split into multiple files
-    // TODO: Use svgs for icons
+    // TODO: Make runnable outside of Processing IDE
     @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
     @Composable
     fun display() {
