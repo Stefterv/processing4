@@ -1,3 +1,4 @@
+import org.gradle.internal.jvm.Jvm
 import org.gradle.kotlin.dsl.support.zipTo
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
@@ -322,40 +323,26 @@ tasks.register<Copy>("includeJavaMode") {
     into(composeResources("modes/java/mode"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
-tasks.register<Download>("includeJdk") {
-    val os = DefaultNativePlatform.getCurrentOperatingSystem()
-    val arch = when (System.getProperty("os.arch")) {
-        "amd64", "x86_64" -> "x64"
-        else -> System.getProperty("os.arch")
-    }
-    val platform = when {
-        os.isWindows -> "windows"
-        os.isMacOsX -> "mac"
-        else -> "linux"
-    }
+tasks.register("includeJdk") {
+    dependsOn("createDistributable")
+    doFirst {
+        val jdk = Jvm.current().javaHome.absolutePath
+        val target = layout.buildDirectory.dir("compose/binaries").get().asFileTree.matching { include("**/include.jdk") }
+            .files
+            .firstOrNull()
+            ?.parentFile
+            ?.resolve("jdk")
+            ?.absolutePath
+            ?: error("Could not find include.jdk")
 
-    val javaVersion = System.getProperty("java.version").split(".")[0]
-    val imageType = "jdk"
-
-    src("https://api.adoptium.net/v3/binary/latest/" +
-            "$javaVersion/ga/" +
-            "$platform/" +
-            "$arch/" +
-            "$imageType/" +
-            "hotspot/normal/eclipse?project=jdk")
-
-    val extension = if (os.isWindows) "zip" else "tar.gz"
-    val jdk = layout.buildDirectory.file("tmp/jdk-$platform-$arch.$extension")
-    dest(jdk)
-    overwrite(false)
-    doLast {
-        copy {
-            val archive = if (os.isWindows) { zipTree(jdk) } else { tarTree(jdk) }
-            from(archive){ eachFile{ permissions{ unix("755") } } }
-            into(composeResources(""))
+        val isWindows = System.getProperty("os.name").lowercase().contains("win")
+        val command = if (isWindows) {
+            listOf("xcopy", "/E", "/I", "/Q", jdk, target)
+        } else {
+            listOf("cp", "-a", jdk, target)
         }
+        ProcessBuilder(command).inheritIO().start().waitFor()
     }
-    finalizedBy("prepareAppResources")
 }
 tasks.register<Copy>("includeSharedAssets"){
     from("../build/shared/")
