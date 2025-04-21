@@ -24,7 +24,7 @@ import kotlin.io.path.writeText
 // TODO: Remove dependency on editor (editor is not mockable, or move editor away from JFrame)
 // TODO: Improve progress tracking
 // TODO: PoC new debugger/tweak mode
-// TODO: Allow for plugins to skip gradle entirely
+// TODO: Allow for plugins to skip gradle entirely / new modes
 // TODO: Improve background building
 // TODO: Rename to Service?
 // TODO: Track build speed (for analytics?)

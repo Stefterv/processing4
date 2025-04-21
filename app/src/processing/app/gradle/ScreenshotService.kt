@@ -14,6 +14,8 @@ import kotlin.time.TimeSource
 // TODO: Move to java mode
 // TODO: Add more feedback when things go wrong
 // TODO: Check if the sketch has a draw method
+// TODO: Communicate the screen over the debugging connection (to support remote clients)
+// TODO: Support recording videos
 class ScreenshotService {
     companion object{
         fun takeScreenshot(vm: VirtualMachine, onComplete: (Path) -> Unit) {
