@@ -279,12 +279,13 @@ tasks.register<Zip>("zipDistributable"){
 }
 
 afterEvaluate{
+    // Override the default DMG task to use our custom one
     tasks.named("packageDmg").configure{
         dependsOn("packageCustomDmg")
         group = "compose desktop"
         actions = emptyList()
     }
-
+    // Override the default MSI task to use our custom one
     tasks.named("packageMsi").configure{
         dependsOn("packageCustomMsi")
         group = "compose desktop"
@@ -335,12 +336,26 @@ tasks.register("includeJdk") {
             ?: error("Could not find include.jdk")
 
         val isWindows = System.getProperty("os.name").lowercase().contains("win")
+        val isMacOS = System.getProperty("os.name").lowercase().contains("mac")
         val command = if (isWindows) {
             listOf("xcopy", "/E", "/I", "/Q", jdk, target)
         } else {
             listOf("cp", "-a", jdk, target)
         }
         ProcessBuilder(command).inheritIO().start().waitFor()
+
+        if(org.gradle.internal.os.OperatingSystem.current().isMacOsX
+            && compose.desktop.application.nativeDistributions.macOS.notarization.appleID.isPresent
+        ) {
+            // Sign the main binary again since changed it.
+            val info = layout.buildDirectory.dir("compose/binaries").get().asFileTree.matching { include("**/Info.plist") }
+                .files
+                .firstOrNull()
+                ?.parentFile ?: error("Could not find Info.plist")
+            val signCommand = listOf("codesign", "--timestamp", "--force", "--deep","--options=runtime", "--sign", "Developer ID Application", info.absolutePath)
+            ProcessBuilder(signCommand).inheritIO().start().waitFor()
+        }
+
     }
 }
 tasks.register<Copy>("includeSharedAssets"){
@@ -526,6 +541,6 @@ afterEvaluate {
     }
     tasks.named("createDistributable").configure {
         dependsOn("signResources")
-        finalizedBy( "includeJdk","setExecutablePermissions")
+        finalizedBy( "includeJdk", "setExecutablePermissions")
     }
 }
