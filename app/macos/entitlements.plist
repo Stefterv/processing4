@@ -14,6 +14,9 @@
     <true/>
     <key>com.apple.security.device.audio-input</key>
     <true/>
-
+    <key>signing-identifier</key>
+    <string>nl.steftervelde.app</string>
+    <key>team-identifier</key>
+    <string>94CU8XHYUN</string>
 </dict>
 </plist>
