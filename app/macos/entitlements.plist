@@ -14,6 +14,12 @@
     <true/>
     <key>com.apple.security.device.audio-input</key>
     <true/>
-
+    <key>parent-constraints</key>
+    <dict>
+        <key>signing-identifier</key>
+        <string>nl.steftervelde.app</string>
+        <key>team-identifier</key>
+        <string>94CU8XHYUN</string>
+    </dict>
 </dict>
 </plist>
