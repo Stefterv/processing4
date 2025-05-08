@@ -158,6 +158,7 @@ tasks.register("lsp-develop"){
 }
 
 val version = if(project.version == "unspecified") "1.0.0" else project.version
+val isSigned = OperatingSystem.current().isMacOsX && compose.desktop.application.nativeDistributions.macOS.signing.sign.get()
 
 tasks.register<Exec>("installCreateDmg") {
     onlyIf { OperatingSystem.current().isMacOsX }
@@ -179,7 +180,6 @@ tasks.register<Exec>("packageCustomDmg"){
     dmg.parentFile.mkdirs()
 
     val extra = mutableListOf<String>()
-    val isSigned = compose.desktop.application.nativeDistributions.macOS.signing.sign.get()
 
     if(!isSigned) {
         val content = """
@@ -350,6 +350,30 @@ tasks.register<Copy>("includeJavaMode") {
 tasks.register<Copy>("includeJdk") {
     from(Jvm.current().javaHome.absolutePath)
     destinationDir = composeResources("jdk").get().asFile
+    finalizedBy("signJdk")
+}
+
+tasks.register<Exec>("signJdk"){
+    onlyIf { isSigned }
+
+    group = "compose desktop"
+    val jdk = composeResources("jdk").get().asFile
+    val plist = jdk.resolve("jdk.plist")
+    doFirst {
+        plist.writeText("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+            <key>signing-identifier</key>
+            <string>${compose.desktop.application.nativeDistributions.macOS.bundleID}</string>
+            <key>team-identifier</key>
+            <string>${compose.desktop.application.nativeDistributions.macOS.notarization.teamID}</string>
+            </dict>
+            </plist>
+        """.trimIndent())
+    }
+    commandLine("codesign", "--force", "--deep", "--verify", "--verbose", "--launch-constraint-parent", plist , "--sign",  "Developer ID Application", jdk)
 }
 tasks.register<Copy>("includeSharedAssets"){
     from("../build/shared/")
@@ -427,11 +451,7 @@ tasks.register("includeProcessingResources"){
 }
 
 tasks.register("signResources"){
-    onlyIf {
-        OperatingSystem.current().isMacOsX
-            &&
-        compose.desktop.application.nativeDistributions.macOS.signing.sign.get()
-    }
+    onlyIf { isSigned }
     group = "compose desktop"
     val resourcesPath = composeResources("")
 
