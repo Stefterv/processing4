@@ -158,6 +158,7 @@ tasks.register("lsp-develop"){
 }
 
 val version = if(project.version == "unspecified") "1.0.0" else project.version
+val isSigned = OperatingSystem.current().isMacOsX && compose.desktop.application.nativeDistributions.macOS.signing.sign.get()
 
 tasks.register<Exec>("installCreateDmg") {
     onlyIf { OperatingSystem.current().isMacOsX }
@@ -179,7 +180,6 @@ tasks.register<Exec>("packageCustomDmg"){
     dmg.parentFile.mkdirs()
 
     val extra = mutableListOf<String>()
-    val isSigned = compose.desktop.application.nativeDistributions.macOS.signing.sign.get()
 
     if(!isSigned) {
         val content = """
@@ -351,6 +351,7 @@ tasks.register<Copy>("includeJdk") {
     from(Jvm.current().javaHome.absolutePath)
     destinationDir = composeResources("jdk").get().asFile
 }
+
 tasks.register<Copy>("includeSharedAssets"){
     from("../build/shared/")
     into(composeResources(""))
@@ -427,17 +428,31 @@ tasks.register("includeProcessingResources"){
 }
 
 tasks.register("signResources"){
-    onlyIf {
-        OperatingSystem.current().isMacOsX
-            &&
-        compose.desktop.application.nativeDistributions.macOS.signing.sign.get()
-    }
+    onlyIf { isSigned }
     group = "compose desktop"
     val resourcesPath = composeResources("")
+    val bundleID = compose.desktop.application.nativeDistributions.macOS.bundleID
+    val teamID = compose.desktop.application.nativeDistributions.macOS.notarization.teamID.get()
 
+    val plist = composeResources("jdk.plist").get().asFile
+    val info = composeResources("Info.plist").get().asFile
     // find jars in the resources directory
     val jars = mutableListOf<File>()
     doFirst{
+        plist.writeText("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+            <key>signing-identifier</key>
+            <string>${bundleID}</string>
+            <key>team-identifier</key>
+            <string>${teamID}</string>
+            </dict>
+            </plist>
+        """.trimIndent())
+
+
         fileTree(resourcesPath)
             .matching { include("**/Info.plist") }
             .singleOrNull()
@@ -467,13 +482,12 @@ tasks.register("signResources"){
             include("**/*x86_64*")
             include("**/*ffmpeg*")
             include("**/ffmpeg*/**")
-            exclude("jdk/**")
             exclude("*.jar")
             exclude("*.so")
             exclude("*.dll")
         }.forEach{ file ->
             exec {
-                commandLine("codesign", "--timestamp", "--force", "--deep","--options=runtime", "--sign", "Developer ID Application", file)
+                commandLine("codesign", "--timestamp", "--force", "--deep","--options=runtime", "--launch-constraint-parent", plist, "--sign", "Developer ID Application", file)
             }
         }
         jars.forEach { file ->
@@ -498,7 +512,8 @@ tasks.register("signResources"){
 
             file.deleteRecursively()
         }
-        file(composeResources("Info.plist")).delete()
+        info.delete()
+        plist.delete()
     }
 
 
