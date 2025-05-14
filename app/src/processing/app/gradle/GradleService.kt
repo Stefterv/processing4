@@ -20,6 +20,7 @@ import java.io.*
 import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
+import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeText
 
 // TODO: Remove dependency on editor (editor is not mockable, or move editor away from JFrame)
@@ -140,14 +141,18 @@ class GradleService(val editor: Editor) {
 
     private fun setupGradle(): MutableList<String> {
         val unsaved = editor.sketch.code
-            .filter { it.isModified }
             .map { code ->
                 val file = workingDir.resolve("unsaved/${code.fileName}")
                 file.parent.toFile().mkdirs()
-                file.writeText(code.documentText)
-                code.fileName
+                // If tab is marked modified save it to the working directory
+                // Otherwise delete the file
+                if(code.isModified){
+                    file.writeText(code.documentText)
+                }else{
+                    file.deleteIfExists()
+                }
+                return@map code.fileName
             }
-        // TODO: Delete unsaved file if not modified
 
         val group = System.getProperty("processing.group", "org.processing")
 
