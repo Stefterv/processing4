@@ -69,6 +69,7 @@ abstract class PDETask : SourceTask() {
 
         val meta = PdePreprocessor
             .builderFor(sketchName)
+            .setTabSize(4)
             .build()
             .write(javaFile, combined)
 
