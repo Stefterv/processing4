@@ -391,10 +391,10 @@ public class Platform {
   static public File getJavaHome() {
     var resourcesDir = System.getProperty("compose.application.resources.dir");
     if(resourcesDir != null) {
-        var jdkFolder = new File(resourcesDir,"jdk");
-        if(jdkFolder.exists()){
-          return jdkFolder;
-        }
+      var jdkFolder = new File(resourcesDir,"jdk");
+      if(jdkFolder.exists()){
+        return jdkFolder;
+      }
     }
 
     var home = System.getProperty("java.home");
