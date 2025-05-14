@@ -538,6 +538,8 @@ tasks.register("setExecutablePermissions") {
 afterEvaluate {
     tasks.named("prepareAppResources").configure {
         dependsOn("includeProcessingResources")
+        // Make sure all libraries are bundled
+        dependsOn(listOf("core","java:preprocessor", "java:gradle").map { project(":$it").tasks.named("publishAllPublicationsToAppRepository") })
     }
     tasks.named("createDistributable").configure {
         finalizedBy("setExecutablePermissions")
