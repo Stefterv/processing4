@@ -25,7 +25,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val workingDir = project.findProperty("processing.workingDir") as String?
         val debugPort = project.findProperty("processing.debugPort") as String?
 
-        // Grab the settings from the most likely location
+        // Grab the settings from the most likely location if not defined
         var settingsFolder = (project.findProperty("processing.settings") as String?)?.let { File(it) }
         if(settingsFolder == null) {
             val osName = System.getProperty("os.name").lowercase()
@@ -54,6 +54,8 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         project.plugins.apply(JavaPlugin::class.java)
 
         if(isProcessing){
+            // TODO: Add support for grabbing Processing internals even if the user is not using the IDE
+
             // Set the build directory to a temp file so it doesn't clutter up the sketch folder
             // Only if the build directory doesn't exist, otherwise proceed as normal
             if(!project.layout.buildDirectory.asFile.get().exists()) {
@@ -121,6 +123,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         }
 
         // TODO: Add support for top level .java files
+        // TODO: Add support for customizing exports
 
         // Add convenience tasks for running, presenting, and exporting the sketch outside of Processing
         if(!isProcessing) {

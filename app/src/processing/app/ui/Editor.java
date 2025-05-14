@@ -528,13 +528,6 @@ public abstract class Editor extends JFrame implements RunnerListener {
     manageModes.addActionListener(e -> ContributionManager.openModes());
     modePopup.add(manageModes);
 
-    JMenuItem enableModern = new JMenuItem(Language.text("toolbar.enable_modern"));
-    enableModern.addActionListener(e -> {
-      this.service.setEnabled(true);
-    });
-    modePopup.addSeparator();
-    modePopup.add(enableModern);
-
     Toolkit.setMenuMnemsInside(modePopup);
   }
 
@@ -609,6 +602,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
    * with things in the Preferences window.
    */
   public void applyPreferences() {
+    service.setEnabled(Preferences.getBoolean("run.use_gradle"));
     // Even though this is only updating the theme (colors, icons),
     // subclasses use this to apply other preferences.
     // For instance, Java Mode applies changes to error checking.

@@ -115,7 +115,7 @@ abstract class ProcessingTask : SourceTask() {
         val deps = File(outputDirectory, "$sketchName.dependencies")
         deps.writeText(dependencies.joinToString("\n") { it.absolutePath })
 
-        // TODO: Add to the dependencies
+        // TODO: Add renderer libraries to the dependencies
         val renderer = meta.sketchRenderer
     }
 

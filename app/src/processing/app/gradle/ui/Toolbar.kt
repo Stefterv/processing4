@@ -51,7 +51,7 @@ class Toolbar(val editor: Editor?) {
             val panel = ComposePanel().apply {
                 setContent {
                     val displayNew = editor.service.active.value
-                    if (displayNew) {
+                    if (displayNew && false) {
                         bar.display()
                         return@setContent
                     }

@@ -15,6 +15,9 @@ import kotlin.time.TimeSource
 // TODO: Add more feedback when things go wrong
 // TODO: Check if the sketch has a draw method
 // TODO: Communicate the screen over the debugging connection (to support remote clients)
+// TODO: Sharing buffers would not work with remote clients
+// TODO: Record / Capture on the client and then transfer the file over the debugging connection
+// TODO: Create a video capture method for every platform / target
 // TODO: Support recording videos
 class ScreenshotService {
     companion object{

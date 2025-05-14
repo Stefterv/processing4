@@ -12,6 +12,7 @@ import processing.app.Base
 import processing.app.Language
 import processing.app.Messages
 import processing.app.Platform
+import processing.app.Preferences
 import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.gradle.helpers.BackgroundGradleJob
 import processing.app.ui.Editor
@@ -26,7 +27,6 @@ import kotlin.io.path.writeText
 // TODO: PoC new debugger/tweak mode
 // TODO: Allow for plugins to skip gradle entirely / new modes
 // TODO: Improve background building
-// TODO: Rename to Service?
 // TODO: Track build speed (for analytics?)
 
 // The gradle service runs the gradle tasks and manages the gradle connection
@@ -35,7 +35,7 @@ import kotlin.io.path.writeText
 // GradleJob manages the gradle build and connects the debugger
 class GradleService(val editor: Editor) {
     val folder: File get() = editor.sketch.folder
-    val active = mutableStateOf(true)
+    val active = mutableStateOf(Preferences.getBoolean("run.use_gradle"))
 
     val jobs = mutableStateListOf<GradleJob>()
     val workingDir = kotlin.io.path.createTempDirectory()
@@ -45,7 +45,7 @@ class GradleService(val editor: Editor) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    // Hooks for java to check if the Gradle service is running
+    // Hooks for java to check if the Gradle service is running since mutableStateOf is not accessible in java
     fun getEnabled(): Boolean {
         return active.value
     }
@@ -101,6 +101,7 @@ class GradleService(val editor: Editor) {
         }
         // TODO: Stop all jobs on dispose
     }
+    // TODO: Add support for present
     fun run(){
         stopActions()
         editor.console.clear()
@@ -215,12 +216,13 @@ class GradleService(val editor: Editor) {
             return@let Base.DEBUG
         }
         if (generate) {
-            Messages.log("build.gradle.kts not found or outdated in ${folder}, creating one")
+            Messages.log("build.gradle.kts outdated or not found in ${folder}, creating one")
             val header = """
                 // @processing-auto-generated mode=${editor.mode.title} version=${Base.getVersionName()}
                 //
                 """.trimIndent()
 
+            // TODO: add instructions keys
             val instructions = Language.text("gradle.instructions")
                 .split("\n")
                 .joinToString("\n") { "// $it" }

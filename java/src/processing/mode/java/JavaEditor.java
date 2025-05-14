@@ -639,12 +639,14 @@ public class JavaEditor extends Editor {
   }
 
   protected void handleLaunch(boolean present, boolean tweak) {
+    prepareRun();
+    toolbar.activateRun();
+
     if(this.service.getEnabled()){
       this.service.run();
       return;
     }
-    prepareRun();
-    toolbar.activateRun();
+
     synchronized (runtimeLock) {
       runtimeLaunchRequested = true;
     }
@@ -673,6 +675,16 @@ public class JavaEditor extends Editor {
    * session or performs standard stop action if not currently debugging.
    */
   public void handleStop() {
+    if(this.service.getEnabled()){
+      // TODO: Improve Gradle UI Feedback
+      toolbar.activateStop();
+      this.service.stop();
+
+      toolbar.deactivateStop();
+      toolbar.deactivateRun();
+      return;
+    }
+
     if (debugger.isStarted()) {
       debugger.stopDebug();
 
