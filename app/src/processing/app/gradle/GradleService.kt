@@ -30,6 +30,8 @@ import kotlin.io.path.writeText
 // TODO: Improve background building
 // TODO: Track build speed (for analytics?)
 
+// TODO: Support offline mode
+
 // The gradle service runs the gradle tasks and manages the gradle connection
 // It will create the necessary build files for gradle to run
 // Then it will kick off a new GradleJob to run the tasks
@@ -56,10 +58,15 @@ class GradleService(val editor: Editor) {
 
     fun startService(){
         Messages.log("Starting Gradle service at $folder")
-        // TODO: recreate connection if sketch folder changes
         connection = GradleConnector.newConnector()
             .forProjectDirectory(folder)
             .connect()
+        editor.sketch.onFolderChangeListeners.add {
+            connection?.close()
+            connection = GradleConnector.newConnector()
+                .forProjectDirectory(folder)
+                .connect()
+        }
 
         startListening()
         startBuilding()
@@ -97,9 +104,8 @@ class GradleService(val editor: Editor) {
                 })
             }
 
-            // TODO: Attach listener to new tab created
+            // TODO: Attach listener to new tab created, callback has to be added to the editor
         }
-        // TODO: Stop all jobs on dispose
     }
     // TODO: Add support for present
     fun run(){

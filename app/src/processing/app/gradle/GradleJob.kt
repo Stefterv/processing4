@@ -62,7 +62,7 @@ abstract class GradleJob{
                         run()
                     }
             }catch (e: Exception){
-                Messages.log("Error while running: ${e.message}")
+                Messages.log("Error while running: ${e.message} ${e.cause?.message}")
             }finally {
                 state.value = State.DONE
                 vm.value = null
