@@ -67,7 +67,6 @@ class GradleService(val editor: Editor) {
 
     private fun startBuilding(){
         scope.launch {
-            // TODO: Improve the experience with unsaved
             val job = BackgroundGradleJob()
             job.service = this@GradleService
             job.configure = {
@@ -140,10 +139,6 @@ class GradleService(val editor: Editor) {
     }
 
     private fun setupGradle(): MutableList<String> {
-        // TODO: is this the best way to handle unsaved data?
-        // Certainly not...
-        // Gradle is not recognizing the unsaved files as changed
-        // Tricky as when we save the file the actual one will be the latest
         val unsaved = editor.sketch.code
             .filter { it.isModified }
             .map { code ->
@@ -152,6 +147,7 @@ class GradleService(val editor: Editor) {
                 file.writeText(code.documentText)
                 code.fileName
             }
+        // TODO: Delete unsaved file if not modified
 
         val group = System.getProperty("processing.group", "org.processing")
 

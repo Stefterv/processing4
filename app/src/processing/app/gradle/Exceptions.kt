@@ -48,6 +48,7 @@ class Exceptions {
 
             println("\n🚨 Exception Caught 🚨")
             println("Type       : ${exception.referenceType().name()}")
+            // TODO: Fix exception message retrieval
 //        println("Message    : ${getExceptionMessage(exception)}")
             println("Thread     : ${thread.name()}")
             println("Location   : ${location.sourcePath()}:${location.lineNumber()}\n")

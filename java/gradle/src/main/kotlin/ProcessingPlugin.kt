@@ -15,6 +15,7 @@ import java.io.File
 import java.util.*
 import javax.inject.Inject
 
+// TODO: CI/CD for publishing the plugin
 class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFactory) : Plugin<Project> {
     override fun apply(project: Project) {
         val sketchName = project.layout.projectDirectory.asFile.name.replace(Regex("[^a-zA-Z0-9_]"), "_")
@@ -38,6 +39,8 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             }
         }
 
+        // Overwrite the preferences as the preprocessor still uses the old PDE settings
+        // TODO: Replace these settings in the preprocessor instead
         val preferences = File(settingsFolder, "preferences.txt")
         val prefs = Properties()
         if(preferences.exists()) prefs.load(preferences.inputStream())
@@ -54,8 +57,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         project.plugins.apply(JavaPlugin::class.java)
 
         if(isProcessing){
-            // TODO: Add support for grabbing Processing internals even if the user is not using the IDE
-
             // Set the build directory to a temp file so it doesn't clutter up the sketch folder
             // Only if the build directory doesn't exist, otherwise proceed as normal
             if(!project.layout.buildDirectory.asFile.get().exists()) {
@@ -68,7 +69,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         // Add the compose plugin to wrap the sketch in an executable
         project.plugins.apply("org.jetbrains.compose")
 
-        // TODO: Do we need these?
         // Add kotlin support
         project.plugins.apply("org.jetbrains.kotlin.jvm")
         // Add jetpack compose support
@@ -80,31 +80,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         // Add the jars in the code folder
         project.dependencies.add("implementation", project.fileTree("src").apply { include("**/code/*.jar") })
 
-        // Add JOGL and Gluegen dependencies
-        // TODO: Add only if user is compiling for P2D or P3D
-        // TODO: Would require adding this after pre-processing
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:jogl-all-main:2.5.0")
-        project.dependencies.add("runtimeOnly", "org.jogamp.gluegen:gluegen-rt-main:2.5.0")
-
-        // TODO: Only add the native dependencies for the platform the user is building for
-        // MacOS specific native dependencies
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:jogl-all:2.5.0:natives-macosx-universal")
-        project.dependencies.add("runtimeOnly", "org.jogamp.gluegen:gluegen-rt:2.5.0:natives-macosx-universal")
-
-        // Windows specific native dependencies
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:jogl-all:2.5.0:natives-windows-amd64")
-        project.dependencies.add("runtimeOnly", "org.jogamp.gluegen:gluegen-rt:2.5.0:natives-windows-amd64")
-
-        // Linux specific native dependencies
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:jogl-all:2.5.0:natives-linux-amd64")
-        project.dependencies.add("runtimeOnly", "org.jogamp.gluegen:gluegen-rt:2.5.0:natives-linux-amd64")
-
-        // NativeWindow dependencies for all platforms
-        project.dependencies.add("implementation", "org.jogamp.jogl:nativewindow:2.5.0")
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:nativewindow:2.5.0:natives-macosx-universal")
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:nativewindow:2.5.0:natives-windows-amd64")
-        project.dependencies.add("runtimeOnly", "org.jogamp.jogl:nativewindow:2.5.0:natives-linux-amd64")
-
+        // TODO: Add support for grabbing Processing internal maven repo even if the user is not using the IDE
         // Add the repositories necessary for building the sketch
         project.repositories.add(project.repositories.maven { it.setUrl("https://jogamp.org/deployment/maven") })
         project.repositories.add(project.repositories.mavenCentral())
@@ -123,7 +99,8 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         }
 
         // TODO: Add support for top level .java files
-        // TODO: Add support for customizing exports
+        // TODO: Add support for customizing distributables
+        // TODO: Setup sensible defaults for the distributables
 
         // Add convenience tasks for running, presenting, and exporting the sketch outside of Processing
         if(!isProcessing) {
@@ -184,32 +161,27 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             }
             sourceSet.allSource.source(pdeSourceSet)
 
-            val outputDirectory = project.layout.buildDirectory.asFile.get().resolve( "generated/pde/" + sourceSet.name)
-            sourceSet.java.srcDir(outputDirectory)
+            val librariesTaskName = sourceSet.getTaskName("scanLibraries", "PDE")
+            val librariesScan = project.tasks.register(librariesTaskName, LibrariesTask::class.java) { task ->
+                task.description = "Scans the libraries in the sketchbook"
+                task.librariesDirectory.set(File(sketchbook, "libraries"))
+            }
 
             val pdeTaskName = sourceSet.getTaskName("preprocess", "PDE")
-            project.tasks.register(pdeTaskName, ProcessingTask::class.java) { task ->
+            val pdeTask = project.tasks.register(pdeTaskName, PDETask::class.java) { task ->
                 task.description = "Processes the ${sourceSet.name} PDE"
                 task.source = pdeSourceSet
-                task.outputDirectory = outputDirectory
                 task.sketchName = sketchName
                 task.workingDir = workingDir
                 task.sketchBook = sketchbook
+
+                // Set the output of the pre-processor as the input for the java compiler
+                sourceSet.java.srcDir(task.outputDirectory)
             }
-            val depsTaskName = sourceSet.getTaskName("addDependencies", "PDE")
-            project.tasks.register(depsTaskName){ task ->
-                task.dependsOn(pdeTaskName)
-                task.doLast {
-                    outputDirectory
-                        .listFiles()
-                        ?.filter { file -> file.name.endsWith(".dependencies") }
-                        ?.map { file ->
-                            val dependencies = file.readLines()
-                            dependencies.forEach { path ->
-                                project.dependencies.add("implementation", project.files(path))
-                            }
-                        }
-                }
+
+            val depsTaskName = sourceSet.getTaskName("addLegacyDependencies", "PDE")
+            project.tasks.register(depsTaskName, DependenciesTask::class.java){ task ->
+                task.dependsOn(pdeTask, librariesScan)
             }
 
             project.tasks.named(

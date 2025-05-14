@@ -15,7 +15,7 @@ ControlP5 cp5;
 
 
 void setup() {
-  size(640, 360);
+  size(640, 360, P2D);
   colorMode(HSB, width, 100, height);
   noStroke();
   background(0);
