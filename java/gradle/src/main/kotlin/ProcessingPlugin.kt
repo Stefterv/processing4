@@ -41,6 +41,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         }
 
         // Overwrite the preferences as the preprocessor still uses the old PDE settings
+        // TODO: Fix loading the preferences on windows
         // TODO: Replace these settings in the preprocessor instead
         val preferences = File(settingsFolder, "preferences.txt")
         val prefs = Properties()
@@ -53,11 +54,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val sketchbook = project.findProperty("processing.sketchbook") as String?
                                 ?: prefs.getProperty("sketchbook.path.four")
                                 ?: ("${System.getProperty("user.home")}/.processing")
-
-        // Replace slashes with backslashes on Windows
-        if (osName.contains("win")) {
-            sketchbook.replace("/", "\\")
-        }
 
         // Apply the Java plugin to the Project
         project.plugins.apply(JavaPlugin::class.java)

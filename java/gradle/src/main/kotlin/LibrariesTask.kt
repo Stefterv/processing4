@@ -12,6 +12,7 @@ import java.util.jar.JarFile
 
 abstract class LibrariesTask : DefaultTask() {
 
+    // TODO: Allow this directory to not exist
     @InputDirectory
     val librariesDirectory: DirectoryProperty = project.objects.directoryProperty()
 
