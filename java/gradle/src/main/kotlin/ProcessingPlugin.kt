@@ -26,10 +26,11 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val workingDir = project.findProperty("processing.workingDir") as String?
         val debugPort = project.findProperty("processing.debugPort") as String?
 
+        val osName = System.getProperty("os.name").lowercase()
+
         // Grab the settings from the most likely location if not defined
         var settingsFolder = (project.findProperty("processing.settings") as String?)?.let { File(it) }
         if(settingsFolder == null) {
-            val osName = System.getProperty("os.name").lowercase()
             if (osName.contains("win")) {
                 settingsFolder = File(System.getenv("APPDATA"), "Processing")
             } else if (osName.contains("mac")) {
@@ -52,6 +53,11 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val sketchbook = project.findProperty("processing.sketchbook") as String?
                                 ?: prefs.getProperty("sketchbook.path.four")
                                 ?: ("${System.getProperty("user.home")}/.processing")
+
+        // Replace slashes with backslashes on Windows
+        if (osName.contains("win")) {
+            sketchbook.replace("/", "\\")
+        }
 
         // Apply the Java plugin to the Project
         project.plugins.apply(JavaPlugin::class.java)
