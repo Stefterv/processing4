@@ -22,7 +22,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build with Gradle
-        run: ./gradlew test
+        run: ./gradlew test --info
   build:
     name: (${{ matrix.os_prefix }}/${{ matrix.arch }}) Create Processing Build
     runs-on: ${{ matrix.os }}
