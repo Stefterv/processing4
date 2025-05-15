@@ -15,6 +15,7 @@ sourceSets{
     main{
         java{
             srcDirs("src")
+            exclude("**/*.jnilib")
         }
         resources{
             srcDirs("src")
