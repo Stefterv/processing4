@@ -11,6 +11,7 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.JavaExec
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
+import processing.app.Preferences
 import java.io.File
 import java.util.*
 import javax.inject.Inject
@@ -26,33 +27,8 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val workingDir = project.findProperty("processing.workingDir") as String?
         val debugPort = project.findProperty("processing.debugPort") as String?
 
-        val osName = System.getProperty("os.name").lowercase()
-
-        // Grab the settings from the most likely location if not defined
-        var settingsFolder = (project.findProperty("processing.settings") as String?)?.let { File(it) }
-        if(settingsFolder == null) {
-            if (osName.contains("win")) {
-                settingsFolder = File(System.getenv("APPDATA"), "Processing")
-            } else if (osName.contains("mac")) {
-                settingsFolder = File(System.getProperty("user.home"), "Library/Processing")
-            } else if (osName.contains("nix") || osName.contains("nux")) {
-                settingsFolder = File(System.getProperty("user.home"), ".processing")
-            }
-        }
-
-        // Overwrite the preferences as the preprocessor still uses the old PDE settings
-        // TODO: Fix loading the preferences on windows
-        // TODO: Replace these settings in the preprocessor instead
-        val preferences = File(settingsFolder, "preferences.txt")
-        val prefs = Properties()
-        if(preferences.exists()) prefs.load(preferences.inputStream())
-        prefs.setProperty("export.application.fullscreen", "false")
-        prefs.setProperty("export.application.present", "false")
-        prefs.setProperty("export.application.stop", "false")
-        if(preferences.exists()) prefs.store(preferences.outputStream(), null)
-
         val sketchbook = project.findProperty("processing.sketchbook") as String?
-                                ?: prefs.getProperty("sketchbook.path.four")
+                                ?: Preferences.get("sketchbook.path.four")
                                 ?: ("${System.getProperty("user.home")}/.processing")
 
         // Apply the Java plugin to the Project
