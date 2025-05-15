@@ -23,14 +23,17 @@ import javax.swing.event.DocumentListener
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeText
 
+// TODO: Test offline mode, gradle seems to be included as not needed to be downloaded.
+// TODO: Test running examples
+// TODO: Report failures to the console
+
+// TODO: ---- FUTURE ----
 // TODO: Remove dependency on editor (editor is not mockable, or move editor away from JFrame)
 // TODO: Improve progress tracking
 // TODO: PoC new debugger/tweak mode
 // TODO: Allow for plugins to skip gradle entirely / new modes
 // TODO: Improve background building
 // TODO: Track build speed (for analytics?)
-
-// TODO: Support offline mode
 
 // The gradle service runs the gradle tasks and manages the gradle connection
 // It will create the necessary build files for gradle to run
@@ -44,8 +47,6 @@ class GradleService(val editor: Editor) {
     val workingDir = kotlin.io.path.createTempDirectory()
     val debugPort = (30_000..60_000).random()
 
-    var connection: ProjectConnection? = null
-
     private val scope = CoroutineScope(Dispatchers.IO)
 
     // Hooks for java to check if the Gradle service is running since mutableStateOf is not accessible in java
@@ -56,57 +57,6 @@ class GradleService(val editor: Editor) {
         this.active.value = active
     }
 
-    fun startService(){
-        Messages.log("Starting Gradle service at $folder")
-        connection = GradleConnector.newConnector()
-            .forProjectDirectory(folder)
-            .connect()
-        editor.sketch.onFolderChangeListeners.add {
-            connection?.close()
-            connection = GradleConnector.newConnector()
-                .forProjectDirectory(folder)
-                .connect()
-        }
-
-        startListening()
-        startBuilding()
-    }
-
-
-    private fun startBuilding(){
-        scope.launch {
-            val job = BackgroundGradleJob()
-            job.service = this@GradleService
-            job.configure = {
-                setup()
-                forTasks("jar")
-                addArguments("--continuous")
-            }
-            job.start()
-        }
-    }
-
-    private fun startListening(){
-        SwingUtilities.invokeLater {
-            editor.sketch.code.forEach {
-                it.document.addDocumentListener(object : DocumentListener {
-                    override fun insertUpdate(e: DocumentEvent) {
-                        setupGradle()
-                    }
-
-                    override fun removeUpdate(e: DocumentEvent) {
-                        setupGradle()
-                    }
-
-                    override fun changedUpdate(e: DocumentEvent) {
-                        setupGradle()
-                    }
-                })
-            }
-
-            // TODO: Attach listener to new tab created, callback has to be added to the editor
-        }
-    }
     // TODO: Add support for present
     fun run(){
         stopActions()
@@ -136,7 +86,6 @@ class GradleService(val editor: Editor) {
 
     fun stop(){
         stopActions()
-        startBuilding()
     }
 
     fun stopActions(){
@@ -166,6 +115,7 @@ class GradleService(val editor: Editor) {
             "group" to group,
             "version" to Base.getVersionName(),
             "sketchFolder" to folder.absolutePath,
+            "sketchbook" to Base.getSketchbookFolder(),
             "workingDir" to workingDir.toAbsolutePath().toString(),
             "settings" to Platform.getSettingsFolder().absolutePath.toString(),
             "unsaved" to unsaved.joinToString(","),

@@ -28,8 +28,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         val debugPort = project.findProperty("processing.debugPort") as String?
 
         val sketchbook = project.findProperty("processing.sketchbook") as String?
-                                ?: Preferences.get("sketchbook.path.four")
-                                ?: ("${System.getProperty("user.home")}/.processing")
 
         // Apply the Java plugin to the Project
         project.plugins.apply(JavaPlugin::class.java)

@@ -46,12 +46,15 @@ abstract class GradleJob{
 
     fun start() {
         service?.jobs?.add(this)
-        val connection = service?.connection ?: return
+        val folder = service?.folder ?: return
         scope.launch {
             try {
                 state.value = State.BUILDING
 
-                connection.newBuild()
+                GradleConnector.newConnector()
+                    .forProjectDirectory(folder)
+                    .connect()
+                    .newBuild()
                     .apply {
                         configure()
                         withCancellationToken(cancel.token())

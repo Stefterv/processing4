@@ -6,6 +6,8 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 class ProcessingPluginTest{
+    // TODO: Write tests
+    // TODO: Test on multiple platforms since there is meaningful differences between the platforms
     @Test
     fun testPluginAddsSketchTask(){
         val project = ProjectBuilder.builder().build()

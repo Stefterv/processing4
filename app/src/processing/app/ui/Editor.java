@@ -2280,7 +2280,6 @@ public abstract class Editor extends JFrame implements RunnerListener {
     } catch (IOException e) {
       throw new EditorException("Could not create the sketch.", e);
     }
-    service.startService();
 
     header.rebuild();
     updateTitle();
