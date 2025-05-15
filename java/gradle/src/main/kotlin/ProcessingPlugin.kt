@@ -58,7 +58,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         // Add the jars in the code folder
         project.dependencies.add("implementation", project.fileTree("src").apply { include("**/code/*.jar") })
 
-        // TODO: Add support for grabbing Processing internal maven repo even if the user is not using the IDE
         // Add the repositories necessary for building the sketch
         project.repositories.add(project.repositories.maven { it.setUrl("https://jogamp.org/deployment/maven") })
         project.repositories.add(project.repositories.mavenCentral())
@@ -76,7 +75,6 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             }
         }
 
-        // TODO: Add support for top level .java files
         // TODO: Add support for customizing distributables
         // TODO: Setup sensible defaults for the distributables
 
@@ -155,6 +153,16 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
 
                 // Set the output of the pre-processor as the input for the java compiler
                 sourceSet.java.srcDir(task.outputDirectory)
+
+                task.doLast {
+                    // Copy java files from the root to the generated directory
+                    project.copy { copyTask ->
+                        copyTask.from(project.layout.projectDirectory){ from ->
+                            from.include("*.java")
+                        }
+                        copyTask.into(task.outputDirectory)
+                    }
+                }
             }
 
             val depsTaskName = sourceSet.getTaskName("addLegacyDependencies", "PDE")

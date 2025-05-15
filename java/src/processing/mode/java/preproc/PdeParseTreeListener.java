@@ -1234,7 +1234,7 @@ public class PdeParseTreeListener extends ProcessingBaseListener {
       StringJoiner argsJoiner = new StringJoiner(", ");
 
       boolean shouldFullScreen;
-      String presentProp = System.getProperty("processing.present");
+      String presentProp = System.getProperty("processing.fullscreen");
 
       if (presentProp != null) {
         shouldFullScreen = presentProp.equals("true");

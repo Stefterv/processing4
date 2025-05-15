@@ -170,7 +170,6 @@ class GradleService(val editor: Editor) {
             "settings" to Platform.getSettingsFolder().absolutePath.toString(),
             "unsaved" to unsaved.joinToString(","),
             "debugPort" to debugPort.toString(),
-            "present" to false, // TODO: Implement
             "fullscreen" to false, // TODO: Implement
             "display" to 1, // TODO: Implement
             "external" to true,
@@ -180,8 +179,6 @@ class GradleService(val editor: Editor) {
             //"stop.color" to "0xFF000000", // TODO: Implement
             "stop.hide" to false, // TODO: Implement
             "sketch.folder" to folder.absolutePath,
-            //"location" to "0,0",
-            //"ui.scale" to "1.0",
         )
         val repository = Platform.getContentFile("repository").absolutePath.replace("""\""", """\\""")
 
