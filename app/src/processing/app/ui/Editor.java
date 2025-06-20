@@ -48,7 +48,6 @@ import javax.swing.text.*;
 import javax.swing.text.html.*;
 import javax.swing.undo.*;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import processing.app.Base;
 import processing.app.Formatter;
@@ -63,6 +62,8 @@ import processing.app.Sketch;
 import processing.app.SketchCode;
 import processing.app.SketchException;
 import processing.app.contrib.ContributionManager;
+import processing.app.gradle.GradleService;
+import processing.app.gradle.ui.Toolbar;
 import processing.app.laf.PdeMenuItemUI;
 import processing.app.syntax.*;
 import processing.core.*;
@@ -75,6 +76,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
   protected Base base;
   protected EditorState state;
   protected Mode mode;
+  protected GradleService service;
 
   // There may be certain gutter sizes that cause text bounds
   // inside the console to be calculated incorrectly.
@@ -157,6 +159,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
     this.base = base;
     this.state = state;
     this.mode = mode;
+    this.service = new GradleService(this);
 
     // Make sure Base.getActiveEditor() never returns null
     base.checkFirstEditor(this);
@@ -220,7 +223,9 @@ public abstract class Editor extends JFrame implements RunnerListener {
 
     rebuildModePopup();
     toolbar = createToolbar();
-    upper.add(toolbar);
+    // Wrapping the toolbar to be able to switch build systems dynamically
+    var wrapped = Toolbar.legacyWrapped(this, toolbar);
+    upper.add(wrapped);
 
     header = createHeader();
     upper.add(header);
@@ -389,6 +394,9 @@ public abstract class Editor extends JFrame implements RunnerListener {
     return ef;
   }
 
+  public EditorFooter getFooter() {
+    return footer;
+  }
 
   public void addErrorTable(EditorFooter ef) {
     JScrollPane scrollPane = new JScrollPane();
@@ -478,6 +486,9 @@ public abstract class Editor extends JFrame implements RunnerListener {
     return mode;
   }
 
+  public GradleService getService() {
+    return service;
+  }
 
   public void repaintHeader() {
     header.repaint();
@@ -491,6 +502,9 @@ public abstract class Editor extends JFrame implements RunnerListener {
 
   public void rebuildModePopup() {
     modePopup = new JMenu();
+
+
+
     ButtonGroup modeGroup = new ButtonGroup();
     for (final Mode m : base.getModeList()) {
       JRadioButtonMenuItem item = new JRadioButtonMenuItem(m.getTitle());
@@ -588,6 +602,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
    * with things in the Preferences window.
    */
   public void applyPreferences() {
+    service.setEnabled(Preferences.getBoolean("run.use_gradle"));
     // Even though this is only updating the theme (colors, icons),
     // subclasses use this to apply other preferences.
     // For instance, Java Mode applies changes to error checking.

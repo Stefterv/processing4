@@ -67,6 +67,7 @@ public class Sketch {
 
   /** folder that contains this sketch */
   private File folder;
+  public List<Runnable> onFolderChangeListeners = new ArrayList<Runnable>();
 
   /** data folder location for this sketch (may not exist yet) */
   private File dataFolder;
@@ -1240,6 +1241,7 @@ public class Sketch {
 
     name = sketchFolder.getName();
     folder = sketchFolder;
+    onFolderChangeListeners.forEach(Runnable::run);
     disappearedWarning = false;
     codeFolder = new File(folder, "code");
     dataFolder = new File(folder, "data");
