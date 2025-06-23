@@ -10,7 +10,6 @@ import processing.app.Mode
 import processing.app.Platform
 import processing.app.Preferences
 import processing.app.Sketch
-import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.ui.Editor
 import java.io.*
 import kotlin.io.path.createTempDirectory
@@ -20,15 +19,13 @@ import kotlin.io.path.writeText
 // TODO: Test offline mode, gradle seems to be included as not needed to be downloaded.
 // TODO: Test running examples
 // TODO: Report failures to the console
-// TODO: Remove dependency on getting mode from Editor
-// TODO: Remove dependency on editor (editor is not mockable and not usable in the CLI, or move editor away from JFrame)
 // TODO: Highlight errors in the editor
 
 // TODO: ---- FUTURE ----
 // TODO: Improve progress tracking
 // TODO: PoC new debugger/tweak mode
 // TODO: Allow for plugins to skip gradle entirely / new modes
-// TODO: Improve background building
+// TODO: Add background building
 // TODO: Track build speed (for analytics?)
 
 // The gradle service runs the gradle tasks and manages the gradle connection
@@ -36,7 +33,6 @@ import kotlin.io.path.writeText
 // Then it will kick off a new GradleJob to run the tasks
 // GradleJob manages the gradle build and connects the debugger
 class GradleService(
-    // TODO: Move to a mode object after decoupling from Editor
     val mode: Mode,
     val editor: Editor?,
 ) {
@@ -55,7 +51,7 @@ class GradleService(
     fun run(){
         stopActions()
 
-        val job = ActionGradleJob()
+        val job = GradleJob()
         job.service = this
         job.configure = {
             setup()
@@ -68,7 +64,7 @@ class GradleService(
     fun export(){
         stopActions()
 
-        val job = ActionGradleJob()
+        val job = GradleJob()
         job.service = this
         job.configure = {
             setup()
@@ -84,7 +80,6 @@ class GradleService(
 
     fun stopActions(){
         jobs
-            .filterIsInstance<ActionGradleJob>()
             .forEach(GradleJob::cancel)
     }
 

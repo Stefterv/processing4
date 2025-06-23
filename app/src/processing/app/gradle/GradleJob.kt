@@ -24,8 +24,7 @@ import java.lang.IllegalStateException
 
 // TODO: Move the error reporting to its own file
 // TODO: Move the output filtering to its own file
-// TODO: Remove dependency on Editor
-abstract class GradleJob{
+class GradleJob{
     enum class State{
         NONE,
         BUILDING,
