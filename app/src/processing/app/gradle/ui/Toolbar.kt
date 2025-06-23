@@ -9,8 +9,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -32,8 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
-import groovyjarjarantlr4.v4.runtime.misc.Args
-import processing.app.gradle.helpers.ActionGradleJob
 import processing.app.gradle.GradleJob
 import processing.app.gradle.ScreenshotService
 import processing.app.ui.Editor
@@ -213,7 +209,7 @@ class Toolbar(val editor: Editor?) {
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     fun SketchButtons() {
-        val job = editor?.service?.jobs?.filterIsInstance<ActionGradleJob>()?.lastOrNull()
+        val job = editor?.service?.jobs?.lastOrNull()
         val state = job?.state?.value ?: GradleJob.State.NONE
         val isActive = state != GradleJob.State.NONE && state != GradleJob.State.DONE
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
