@@ -159,7 +159,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
     this.base = base;
     this.state = state;
     this.mode = mode;
-    this.service = new GradleService(this);
+    this.service = new GradleService(this.mode,this);
 
     // Make sure Base.getActiveEditor() never returns null
     base.checkFirstEditor(this);
@@ -2280,6 +2280,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
     } catch (IOException e) {
       throw new EditorException("Could not create the sketch.", e);
     }
+    service.setSketch(sketch);
 
     header.rebuild();
     updateTitle();

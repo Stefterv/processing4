@@ -2,33 +2,29 @@ package processing.app.gradle
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.gradle.tooling.BuildLauncher
-import org.gradle.tooling.GradleConnector
-import org.gradle.tooling.ProjectConnection
 import processing.app.Base
 import processing.app.Language
 import processing.app.Messages
+import processing.app.Mode
 import processing.app.Platform
 import processing.app.Preferences
+import processing.app.Sketch
 import processing.app.gradle.helpers.ActionGradleJob
-import processing.app.gradle.helpers.BackgroundGradleJob
 import processing.app.ui.Editor
 import java.io.*
-import javax.swing.SwingUtilities
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
+import kotlin.io.path.createTempDirectory
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeText
 
 // TODO: Test offline mode, gradle seems to be included as not needed to be downloaded.
 // TODO: Test running examples
 // TODO: Report failures to the console
+// TODO: Remove dependency on getting mode from Editor
+// TODO: Remove dependency on editor (editor is not mockable and not usable in the CLI, or move editor away from JFrame)
+// TODO: Highlight errors in the editor
 
 // TODO: ---- FUTURE ----
-// TODO: Remove dependency on editor (editor is not mockable, or move editor away from JFrame)
 // TODO: Improve progress tracking
 // TODO: PoC new debugger/tweak mode
 // TODO: Allow for plugins to skip gradle entirely / new modes
@@ -39,28 +35,25 @@ import kotlin.io.path.writeText
 // It will create the necessary build files for gradle to run
 // Then it will kick off a new GradleJob to run the tasks
 // GradleJob manages the gradle build and connects the debugger
-class GradleService(val editor: Editor) {
-    val folder: File get() = editor.sketch.folder
+class GradleService(
+    // TODO: Move to a mode object after decoupling from Editor
+    val mode: Mode,
+    val editor: Editor?,
+) {
     val active = mutableStateOf(Preferences.getBoolean("run.use_gradle"))
 
+    var sketch: Sketch? = null
+
+    var out: PrintStream = System.out
+    var err: PrintStream = System.err
+
     val jobs = mutableStateListOf<GradleJob>()
-    val workingDir = kotlin.io.path.createTempDirectory()
+    val workingDir = createTempDirectory()
     val debugPort = (30_000..60_000).random()
-
-    private val scope = CoroutineScope(Dispatchers.IO)
-
-    // Hooks for java to check if the Gradle service is running since mutableStateOf is not accessible in java
-    fun getEnabled(): Boolean {
-        return active.value
-    }
-    fun setEnabled(active: Boolean) {
-        this.active.value = active
-    }
 
     // TODO: Add support for present
     fun run(){
         stopActions()
-        editor.console.clear()
 
         val job = ActionGradleJob()
         job.service = this
@@ -68,12 +61,12 @@ class GradleService(val editor: Editor) {
             setup()
             forTasks("run")
         }
+        jobs.add(job)
         job.start()
     }
 
     fun export(){
         stopActions()
-        editor.console.clear()
 
         val job = ActionGradleJob()
         job.service = this
@@ -81,6 +74,7 @@ class GradleService(val editor: Editor) {
             setup()
             forTasks("runDistributable")
         }
+        jobs.add(job)
         job.start()
     }
 
@@ -95,7 +89,9 @@ class GradleService(val editor: Editor) {
     }
 
     private fun setupGradle(): MutableList<String> {
-        val unsaved = editor.sketch.code
+        val sketch = sketch ?: throw IllegalStateException("Sketch is not set")
+
+        val unsaved = sketch.code
             .map { code ->
                 val file = workingDir.resolve("unsaved/${code.fileName}")
                 file.parent.toFile().mkdirs()
@@ -114,7 +110,7 @@ class GradleService(val editor: Editor) {
         val variables = mapOf(
             "group" to group,
             "version" to Base.getVersionName(),
-            "sketchFolder" to folder.absolutePath,
+            "sketchFolder" to sketch.folder.absolutePath,
             "sketchbook" to Base.getSketchbookFolder(),
             "workingDir" to workingDir.toAbsolutePath().toString(),
             "settings" to Platform.getSettingsFolder().absolutePath.toString(),
@@ -123,12 +119,12 @@ class GradleService(val editor: Editor) {
             "fullscreen" to false, // TODO: Implement
             "display" to 1, // TODO: Implement
             "external" to true,
-            "editor.location" to editor.location.let { "${it.x},${it.y}" },
+            "editor.location" to editor?.location?.let { "${it.x},${it.y}" },
             //"awt.disable" to false,
             //"window.color" to "0xFF000000", // TODO: Implement
             //"stop.color" to "0xFF000000", // TODO: Implement
             "stop.hide" to false, // TODO: Implement
-            "sketch.folder" to folder.absolutePath,
+            "sketch.folder" to sketch.folder.absolutePath,
         )
         val repository = Platform.getContentFile("repository").absolutePath.replace("""\""", """\\""")
 
@@ -154,7 +150,7 @@ class GradleService(val editor: Editor) {
         }
 
 
-        val buildGradle = folder.resolve("build.gradle.kts")
+        val buildGradle = sketch.folder.resolve("build.gradle.kts")
         val generate = buildGradle.let {
             if(!it.exists()) return@let true
 
@@ -164,15 +160,15 @@ class GradleService(val editor: Editor) {
             val version = contents.substringAfter("version=").substringBefore("\n")
             if(version != Base.getVersionName()) return@let true
 
-            val mode = contents.substringAfter("mode=").substringBefore(" ")
-            if(editor.mode.title != mode) return@let true
+            val modeTitle = contents.substringAfter("mode=").substringBefore(" ")
+            if(this.mode.title != modeTitle) return@let true
 
             return@let Base.DEBUG
         }
         if (generate) {
-            Messages.log("build.gradle.kts outdated or not found in ${folder}, creating one")
+            Messages.log("build.gradle.kts outdated or not found in ${sketch.folder}, creating one")
             val header = """
-                // @processing-auto-generated mode=${editor.mode.title} version=${Base.getVersionName()}
+                // @processing-auto-generated mode=${mode.title} version=${Base.getVersionName()}
                 //
                 """.trimIndent()
 
@@ -193,14 +189,17 @@ class GradleService(val editor: Editor) {
             val content = "${header}\n${instructions}\n${configuration}"
             buildGradle.writeText(content)
         }
-        val settingsGradle = folder.resolve("settings.gradle.kts")
+        val settingsGradle = sketch.folder.resolve("settings.gradle.kts")
         if (!settingsGradle.exists()) {
             settingsGradle.createNewFile()
         }
 
         val arguments = mutableListOf("--init-script", initGradle.toAbsolutePath().toString())
         if (!Base.DEBUG) arguments.add("--quiet")
-        arguments.addAll(variables.entries.map { "-Pprocessing.${it.key}=${it.value}" })
+        arguments.addAll(variables.entries
+            .filter { it.value != null }
+            .map { "-Pprocessing.${it.key}=${it.value}" }
+        )
 
         return arguments
     }
@@ -212,5 +211,13 @@ class GradleService(val editor: Editor) {
         val arguments = setupGradle()
         arguments.addAll(extraArguments)
         withArguments(*arguments.toTypedArray())
+    }
+
+    // Hooks for java to check if the Gradle service is running since mutableStateOf is not accessible in java
+    fun getEnabled(): Boolean {
+        return active.value
+    }
+    fun setEnabled(active: Boolean) {
+        this.active.value = active
     }
 }

@@ -53,6 +53,9 @@ class Exceptions {
             println("Thread     : ${thread.name()}")
             println("Location   : ${location.sourcePath()}:${location.lineNumber()}\n")
 
+            // TODO: Map to .pde file again
+            // TODO: Communicate back to Editor
+
             // Separate stack frames
             val userFrames = mutableListOf<StackFrame>()
             val processingFrames = mutableListOf<StackFrame>()

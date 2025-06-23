@@ -20,9 +20,11 @@ import processing.app.Messages
 import java.io.InputStreamReader
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import java.lang.IllegalStateException
 
 // TODO: Move the error reporting to its own file
 // TODO: Move the output filtering to its own file
+// TODO: Remove dependency on Editor
 abstract class GradleJob{
     enum class State{
         NONE,
@@ -45,8 +47,7 @@ abstract class GradleJob{
     private val errorStream = PipedOutputStream()
 
     fun start() {
-        service?.jobs?.add(this)
-        val folder = service?.folder ?: return
+        val folder = service?.sketch?.folder ?: throw IllegalStateException("Sketch folder is not set")
         scope.launch {
             try {
                 state.value = State.BUILDING
@@ -71,6 +72,7 @@ abstract class GradleJob{
                 vm.value = null
             }
         }
+        // TODO: I'm sure this can be done better
         scope.launch {
             try {
                 InputStreamReader(PipedInputStream(outputStream)).buffered().use { reader ->
@@ -82,7 +84,7 @@ abstract class GradleJob{
                             if (state.value != State.RUNNING) {
                                 return@forEach
                             }
-                            service?.editor?.console?.out?.println(line)
+                            service?.out?.println(line)
                         }
                 }
             }catch (e: Exception){
@@ -104,7 +106,7 @@ abstract class GradleJob{
                                 line.contains("+[IMKClient subclass]: chose IMKClient_Modern") -> return@forEach
                                 line.contains("+[IMKInputSession subclass]: chose IMKInputSession_Modern") -> return@forEach
                                 line.startsWith("__MOVE__") -> return@forEach
-                                else -> service?.editor?.console?.err?.println(line)
+                                else -> service?.err?.println(line)
                             }
                         }
                 }
@@ -155,7 +157,7 @@ abstract class GradleJob{
                 val details = event.details.details?.replace(path ?: "", "")
                 val solutions = event.solutions.joinToString("\n") { it.solution }
                 val content = "$header\n$details\n$solutions"
-                service?.editor?.console?.err?.println(content)
+                service?.err?.println(content)
             }
         })
     }
