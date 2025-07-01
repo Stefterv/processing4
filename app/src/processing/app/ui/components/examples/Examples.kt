@@ -30,7 +30,7 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
 import processing.app.LocalPreferences
 import processing.app.Messages
 import processing.app.Platform
-import processing.app.ui.Welcome.Companion.LocalBase
+import processing.app.ui.WelcomeToProcessing.Companion.LocalBase
 import java.awt.Cursor
 import java.io.File
 import java.nio.file.*

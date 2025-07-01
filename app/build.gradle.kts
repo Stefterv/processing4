@@ -420,8 +420,7 @@ tasks.register("includeProcessingResources"){
         "includeSharedAssets",
         "includeProcessingExamples",
         "includeProcessingWebsiteExamples",
-        "includeJavaModeResources",
-        "renameWindres"
+        "includeJavaModeResources"
     )
     finalizedBy("signResources")
 }

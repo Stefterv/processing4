@@ -51,7 +51,6 @@ fun LocaleProvider(content: @Composable () -> Unit) {
         java.util.Locale.setDefault(locale)
         languageFile.writeText(locale.language)
         code = locale.language
-        Language.reload()
     }
 
 

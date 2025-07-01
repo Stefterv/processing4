@@ -502,9 +502,6 @@ public abstract class Editor extends JFrame implements RunnerListener {
 
   public void rebuildModePopup() {
     modePopup = new JMenu();
-
-
-
     ButtonGroup modeGroup = new ButtonGroup();
     for (final Mode m : base.getModeList()) {
       JRadioButtonMenuItem item = new JRadioButtonMenuItem(m.getTitle());

@@ -2,7 +2,6 @@ package processing.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
 import com.formdev.flatlaf.util.SystemInfo
 import processing.app.*
 import processing.app.ui.components.LanguageChip
@@ -32,12 +30,10 @@ import processing.app.ui.theme.*
 import java.awt.Desktop
 import java.io.IOException
 import java.net.URI
-import java.nio.file.*
-import java.util.*
 import javax.swing.SwingUtilities
 
 
-class Welcome @Throws(IOException::class) constructor(base: Base) {
+class WelcomeToProcessing @Throws(IOException::class) constructor(base: Base) {
     init {
         SwingUtilities.invokeLater {
             PDEWindow("menu.help.welcome", fullWindowContent = true) {
