@@ -172,10 +172,6 @@ class GradleService(
                 .split("\n")
                 .joinToString("\n") { "// $it" }
 
-            // TODO: Move the current configuration to java mode
-            // TODO: Allow for other plugins to be registered
-            // TODO: Allow for the whole configuration to be overridden
-            // TODO: Define new plugin / mode schema
             val configuration =  """
                 plugins{
                     id("org.processing.gradle") version "${Base.getVersionName()}"

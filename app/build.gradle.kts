@@ -124,17 +124,13 @@ dependencies {
     implementation(libs.kaml)
     implementation(libs.markdown)
     implementation(libs.markdownJVM)
+    implementation(gradleApi())
+    implementation(libs.clikt)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.junitJupiter)
     testImplementation(libs.junitJupiterParams)
-
-    implementation(gradleApi())
-    @OptIn(ExperimentalComposeLibrary::class)
-    testImplementation(compose.uiTest)
-
-    implementation(libs.clikt)
 }
 
 tasks.test {
@@ -416,23 +412,6 @@ tasks.register<Copy>("includeJavaModeResources") {
     from(java.layout.buildDirectory.dir("resources-bundled"))
     into(composeResources("../"))
 }
-// TODO: Move to java mode
-tasks.register<Copy>("renameWindres") {
-    dependsOn("includeSharedAssets","includeJavaModeResources")
-    val dir = composeResources("modes/java/application/launch4j/bin/")
-    val os = DefaultNativePlatform.getCurrentOperatingSystem()
-    val platform = when {
-        os.isWindows -> "windows"
-        os.isMacOsX -> "macos"
-        else -> "linux"
-    }
-    from(dir) {
-        include("*-$platform*")
-        rename("(.*)-$platform(.*)", "$1$2")
-    }
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    into(dir)
-}
 tasks.register("includeProcessingResources"){
     dependsOn(
         "includeJdk",
@@ -548,7 +527,7 @@ tasks.register("setExecutablePermissions") {
 afterEvaluate {
     tasks.named("prepareAppResources").configure {
         dependsOn("includeProcessingResources")
-        // Make sure all libraries are bundled
+        // Make sure all libraries are bundled in the maven repository distributed with the app
         dependsOn(listOf("core","java:preprocessor", "java:gradle").map { project(":$it").tasks.named("publishAllPublicationsToAppRepository") })
     }
     tasks.named("createDistributable").configure {

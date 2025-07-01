@@ -39,6 +39,14 @@ import processing.app.ui.theme.toColorInt
 import java.io.File
 import javax.swing.JComponent
 
+// TODO: Split into multiple files and components
+// TODO: Make testable outside of Processing IDE
+
+/*
+The toolbar class is a Compose-based UI component that provides a toolbar for the Processing editor.
+It was originally developed together with the gradle runner but has been postponed to be used later.
+Can be deleted if the toolbar UI is not going to be refactored to use Compose.
+ */
 class Toolbar(val editor: Editor?) {
     companion object {
         @JvmStatic
@@ -61,8 +69,7 @@ class Toolbar(val editor: Editor?) {
         }
     }
 
-    // TODO: Split into multiple files
-    // TODO: Make runnable outside of Processing IDE
+
     @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
     @Composable
     fun display() {

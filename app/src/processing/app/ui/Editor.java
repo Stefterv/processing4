@@ -223,7 +223,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
 
     rebuildModePopup();
     toolbar = createToolbar();
-    // Wrapping the toolbar to be able to switch build systems dynamically
+    // Wrapping the toolbar to be able to use the new Compose base toolbar
     var wrapped = Toolbar.legacyWrapped(this, toolbar);
     upper.add(wrapped);
 

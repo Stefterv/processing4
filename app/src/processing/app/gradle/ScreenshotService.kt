@@ -19,6 +19,10 @@ import kotlin.time.TimeSource
 // TODO: Record / Capture on the client and then transfer the file over the debugging connection
 // TODO: Create a video capture method for every platform / target
 // TODO: Support recording videos
+/*
+* This service is used to take screenshots of the sketch.
+* It uses the JDI to connect to the sketch and take a screenshot.
+ */
 class ScreenshotService {
     companion object{
         fun takeScreenshot(vm: VirtualMachine, onComplete: (Path) -> Unit) {
