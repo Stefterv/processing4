@@ -29,7 +29,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -488,6 +487,10 @@ public class JavaEditor extends Editor {
    * Handler for Sketch → Export Application
    */
   public void handleExportApplication() {
+    if(service.getEnabled()){
+        service.export();
+        return;
+    }
     if (handleExportCheckModified()) {
       statusNotice(Language.text("export.notice.exporting"));
       ExportPrompt ep = new ExportPrompt(this, () -> {
@@ -638,6 +641,14 @@ public class JavaEditor extends Editor {
   protected void handleLaunch(boolean present, boolean tweak) {
     prepareRun();
     toolbar.activateRun();
+
+    if(this.service.getEnabled()){
+      System.setProperty("processing.fullscreen", present ? "true" : "false");
+      System.setProperty("processing.tweak", tweak ? "true" : "false");
+      this.service.run();
+      return;
+    }
+
     synchronized (runtimeLock) {
       runtimeLaunchRequested = true;
     }
@@ -666,6 +677,11 @@ public class JavaEditor extends Editor {
    * session or performs standard stop action if not currently debugging.
    */
   public void handleStop() {
+    if(this.service.getEnabled()){
+      this.service.stop();
+      return;
+    }
+
     if (debugger.isStarted()) {
       debugger.stopDebug();
 
