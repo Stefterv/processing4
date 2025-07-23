@@ -1,7 +1,7 @@
 import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
-    id("java")
+    java
     kotlin("jvm") version libs.versions.kotlin
     alias(libs.plugins.mavenPublish)
 }
@@ -63,6 +63,13 @@ mavenPublishing{
             url.set("https://github.com/processing/processing4")
             connection.set("scm:git:git://github.com/processing/processing4.git")
             developerConnection.set("scm:git:ssh://git@github.com/processing/processing4.git")
+        }
+        withXml {
+            asNode().appendNode("repositories").appendNode("repository").apply{
+                appendNode("id", "jogamp")
+                appendNode("name", "JogAmp Maven Repository")
+                appendNode("url", "https://jogamp.org/deployment/maven")
+            }
         }
     }
 }
