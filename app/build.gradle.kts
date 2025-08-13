@@ -310,7 +310,7 @@ afterEvaluate{
         ){
             dependsOn("notarizeDmg")
         }
-        dependsOn("packageSnap", "zipDistributable")
+        dependsOn("zipDistributable")
     }
 }
 
