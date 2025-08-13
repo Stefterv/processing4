@@ -159,6 +159,7 @@ tasks.register("lsp-develop"){
 }
 
 val version = if(project.version == "unspecified") "1.0.0" else project.version
+val distributable = tasks.named<AbstractJPackageTask>("createDistributable")
 
 tasks.register<Exec>("installCreateDmg") {
     onlyIf { OperatingSystem.current().isMacOsX }
@@ -168,11 +169,10 @@ tasks.register<Exec>("packageCustomDmg"){
     onlyIf { OperatingSystem.current().isMacOsX }
     group = "compose desktop"
 
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    dependsOn(distributable, "installCreateDmg")
+    dependsOn(distributable.get(), "installCreateDmg")
 
-    val packageName = distributable.packageName.get()
-    val dir = distributable.destinationDir.get()
+    val packageName = distributable.get().packageName.get()
+    val dir = distributable.get().destinationDir.get()
     val dmg = dir.file("../dmg/$packageName-$version.dmg").asFile
     val app = dir.file("$packageName.app").asFile
 
@@ -227,12 +227,8 @@ tasks.register<Exec>("packageCustomMsi"){
     )
 }
 
-
 tasks.register("generateSnapConfiguration"){
     onlyIf { OperatingSystem.current().isLinux }
-
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    dependsOn(distributable)
 
     val name = findProperty("snapname") as String? ?: rootProject.name
     val arch = when (System.getProperty("os.arch")) {
@@ -241,8 +237,8 @@ tasks.register("generateSnapConfiguration"){
         else -> System.getProperty("os.arch")
     }
     val confinement = findProperty("snapconfinement") as String? ?: "strict"
-    val dir = distributable.destinationDir.get()
-    val base = layout.projectDirectory.file("linux/snapcraft.base.yml")
+    val dir = distributable.get().destinationDir.get()
+    val base = layout.projectDirectory.file("linux/snapcraft.yml")
 
     doFirst {
 
@@ -265,26 +261,45 @@ tasks.register("generateSnapConfiguration"){
                 }
                 return@let it
             }
-        dir.file("../snapcraft.yaml").asFile.writeText(content)
+        dir.file("../snap/snapcraft.yaml").asFile.writeText(content)
     }
 }
 
 tasks.register<Exec>("packageSnap"){
     onlyIf { OperatingSystem.current().isLinux }
-    dependsOn("packageDeb", "generateSnapConfiguration")
+    dependsOn("generateSnapConfiguration")
     group = "compose desktop"
 
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    workingDir = distributable.destinationDir.dir("../").get().asFile
+    workingDir = distributable.get().destinationDir.dir("../snap").get().asFile
     commandLine("snapcraft")
+}
+
+tasks.register<Exec>("packageFlathub"){
+    onlyIf { OperatingSystem.current().isLinux }
+    group = "compose desktop"
+
+    val dir = distributable.get().destinationDir.get()
+    val packageName = distributable.get().packageName.get()
+    val identifier = findProperty("flathubidentifier") as String? ?: rootProject.group
+
+    workingDir = dir.file("../flatpak").asFile
+    commandLine(
+        "flatpak-builder",
+        "--force-clean",
+        "--repo=repo",
+        "--install",
+        "--user",
+        "--install-deps-from=flathub",
+        "$packageName.flatpakref",
+        "$identifier.yml"
+    )
 }
 tasks.register<Zip>("zipDistributable"){
     dependsOn("createDistributable", "setExecutablePermissions")
     group = "compose desktop"
 
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    val dir = distributable.destinationDir.get()
-    val packageName = distributable.packageName.get()
+    val dir = distributable.get().destinationDir.get()
+    val packageName = distributable.get().packageName.get()
 
     from(dir){ eachFile{ permissions{ unix("755") } } }
     archiveBaseName.set(packageName)
@@ -310,7 +325,7 @@ afterEvaluate{
         ){
             dependsOn("notarizeDmg")
         }
-        dependsOn("packageSnap", "zipDistributable")
+        dependsOn("zipDistributable")
     }
 }
 
