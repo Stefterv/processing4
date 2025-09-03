@@ -36,6 +36,7 @@ import processing.app.ui.EditorState;
 import processing.utils.SketchException;
 import processing.mode.java.runner.Runner;
 import processing.mode.java.tweak.SketchParser;
+import processing.utils.download.Downloadable;
 
 
 public class JavaMode extends Mode {
@@ -48,6 +49,8 @@ public class JavaMode extends Mode {
 
   public JavaMode(Base base, File folder) {
     super(base, folder);
+
+    Downloadable.register(JDKDownloadable.class);
 
     loadPreferences();
     loadSuggestionsMap();

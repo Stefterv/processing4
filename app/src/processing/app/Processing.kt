@@ -12,6 +12,7 @@ import com.github.ajalt.clikt.parameters.options.help
 import com.github.ajalt.clikt.parameters.options.option
 import processing.app.api.Contributions
 import processing.app.api.Sketchbook
+import processing.app.ui.DownloadsManager
 import processing.app.ui.Start
 import java.io.File
 import java.util.prefs.Preferences
@@ -33,6 +34,9 @@ class Processing: SuspendingCliktCommand("processing"){
             println("processing-${Base.getVersionName()}-${Base.getRevision()}")
             return
         }
+
+        // Register the downloadable listener
+        DownloadsManager.registerListener()
 
         thread {
             // Update the install locations in preferences

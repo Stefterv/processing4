@@ -306,6 +306,8 @@ public class Base {
         handleCrustyDisplay();
         handleTempCleaning();
 
+        DownloadsManager.startup();
+
       } catch (Throwable t) {
         // Catch-all to pick up badness during startup.
         Throwable err = t;
