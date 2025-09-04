@@ -1,5 +1,6 @@
 package processing.app.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -20,24 +21,23 @@ class DownloadsManager {
         fun startup() {
             Messages.log("START UP :)")
             SwingUtilities.invokeLater {
-                JFrame().apply {
-                    ComposePanel().apply {
-                        setContent {
-                            DownloadsManager()
-                        }
-                        this@apply.add(this)
+                val composePanel = ComposePanel().apply {
+                    setContent {
+                        DownloadsManager()
                     }
+                }
+                JFrame().apply {
+                    add(composePanel)
                     pack()
                     isVisible = true
                     requestFocus()
                 }
-
             }
         }
 
         @Composable
         fun DownloadsManager() {
-            Window(onCloseRequest = { /*TODO*/ }, title = windowTitle) {
+            Box() {
                 Text("Hello!")
             }
         }
