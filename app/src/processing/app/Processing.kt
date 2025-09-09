@@ -65,7 +65,7 @@ class LSP: SuspendingCliktCommand("lsp"){
             System.setProperty("java.awt.headless", "true")
 
             // Indirect invocation since app does not depend on java mode
-            Class.forName("processing.mode.java.lsp.PdeLanguageServer")
+            Class.forName("processing.mode.java.lsp.proxy.PdeLanguageServerProxy")
                 .getMethod("main", Array<String>::class.java)
                 .invoke(null, arrayOf<String>())
         } catch (e: Exception) {
