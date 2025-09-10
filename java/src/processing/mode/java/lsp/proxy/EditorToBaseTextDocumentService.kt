@@ -163,6 +163,7 @@ class EditorToBaseTextDocumentService(baseLanguageServer: LanguageServer): TextD
     }
 
     override fun didOpen(params: DidOpenTextDocumentParams?) {
+        params?.textDocument?.uri?.let {  PdeService.instance?.addSketchFile(it )}
         // Start the pre-processor if the sketch was not opened yet
         // We have to ignore workspace folders as they might not be correct
         downstream.didOpen(params)

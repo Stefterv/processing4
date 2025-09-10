@@ -83,7 +83,7 @@ libraries.forEach { library ->
     }
     tasks.named("extraResources"){ dependsOn("library-$library-extraResources") }
 }
-tasks.jar { dependsOn("extraResources") }
+//tasks.jar { dependsOn("extraResources") }
 tasks.processResources{ finalizedBy("extraResources") }
 tasks.compileTestJava{ finalizedBy("extraResources") }
 
