@@ -28,6 +28,8 @@ import java.awt.datatransfer.*;
 import java.awt.event.*;
 import java.awt.print.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -933,6 +935,44 @@ public abstract class Editor extends JFrame implements RunnerListener {
       } else {
         sketch.handleAddFile();
       }
+    });
+    sketchMenu.add(item);
+
+    item = new JMenuItem(Language.text("menu.sketch.save_as_template"));
+    item.addActionListener(e -> {
+        if (sketch.isUntitled() || sketch.isReadOnly()) {
+            Messages.showMessage("Save First", "Please first save the sketch.");
+            return;
+        }
+
+        var templateDir = new File(Base.getSketchbookTemplatesFolder(), mode.getTitle());
+        if (!templateDir.exists()) templateDir.mkdirs();
+
+        var template = new File(templateDir, "sketch."+mode.getDefaultExtension());
+
+        if(template.exists()){
+            // TODO: Allow for overwriting after confirmation
+            Messages.showWarning("Template Exists",
+                    "A template with this name already exists. Please rename or delete the existing template first.", null);
+            return;
+//            Messages.showYesNoQuestion(this, "Overwrite Template?",
+//                    "Are you sure you want to overwrite the existing template?",
+//                    () -> {
+//
+//                    }, () -> {
+//                        // do nothing
+//                    });
+        }
+
+        var selectedCode = this.sketch.getCurrentCode();
+        try {
+            Files.copy(selectedCode.getFile().toPath(), template.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Messages.showMessage("Template Saved",
+                    "The current sketch has been saved as a template named "+template.getName());
+        } catch (IOException ex) {
+            Messages.showWarning("Template Save Error",
+                    "An error occurred while trying to save the template.", ex);
+        }
     });
     sketchMenu.add(item);
 
