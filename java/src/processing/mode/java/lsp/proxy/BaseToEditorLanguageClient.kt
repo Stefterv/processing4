@@ -8,7 +8,7 @@ import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
 import java.util.concurrent.CompletableFuture
 
-class BaseLanguageClient: LanguageClient {
+class BaseToEditorLanguageClient: LanguageClient {
     var downstream: LanguageServer? = null
     var upstream: LanguageClient? = null
 
