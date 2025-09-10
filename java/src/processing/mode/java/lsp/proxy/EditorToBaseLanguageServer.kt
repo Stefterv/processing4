@@ -12,8 +12,20 @@ class EditorToBaseLanguageServer() : LanguageServer {
     var downstream: LanguageServer? = null
     var upstream: LanguageClient? = null
 
+    // This method needs to modify the following of the input params
+    // the root path
+    // the root URI
+    // the workspace folders
+    // this method needs to modify the following output results:
+    // the server capabilities
+    // the server info
     override fun initialize(params: InitializeParams?): CompletableFuture<InitializeResult?>? {
+        // Modify params here
         return downstream?.initialize(params)
+            ?.thenApply {
+                // Modify result here
+                return@thenApply it
+            }
     }
 
     override fun shutdown(): CompletableFuture<in Any>? {
@@ -25,10 +37,10 @@ class EditorToBaseLanguageServer() : LanguageServer {
     }
 
     override fun getTextDocumentService(): TextDocumentService? {
-        return downstream?.textDocumentService
+        return downstream?.let { EditorToBaseTextDocumentService(it) }
     }
 
     override fun getWorkspaceService(): WorkspaceService? {
-        return downstream?.workspaceService
+        return downstream?.let { EditorToBaseWorkspaceService(it) }
     }
 }
