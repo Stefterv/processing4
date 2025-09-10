@@ -80,7 +80,7 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.TextDocumentService
 import java.util.concurrent.CompletableFuture
 
-class EditorToBaseTextDocumentService(val baseLanguageServer: LanguageServer): TextDocumentService {
+class EditorToBaseTextDocumentService(baseLanguageServer: LanguageServer): TextDocumentService {
     val downstream = baseLanguageServer.textDocumentService
     override fun completion(position: CompletionParams?): CompletableFuture<Either<List<CompletionItem?>?, CompletionList?>?>? {
         return downstream.completion(position)
@@ -163,14 +163,19 @@ class EditorToBaseTextDocumentService(val baseLanguageServer: LanguageServer): T
     }
 
     override fun didOpen(params: DidOpenTextDocumentParams?) {
+        // Start the pre-processor if the sketch was not opened yet
+        // We have to ignore workspace folders as they might not be correct
         downstream.didOpen(params)
     }
 
     override fun didChange(params: DidChangeTextDocumentParams?) {
+        // Notify the pre-processor of the change
+        // Then notify the downstream server
         downstream.didChange(params)
     }
 
     override fun didClose(params: DidCloseTextDocumentParams?) {
+        // clean up the pre-processor if needed
         downstream.didClose(params)
     }
 

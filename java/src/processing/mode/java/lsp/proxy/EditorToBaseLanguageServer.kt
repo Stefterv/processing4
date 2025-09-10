@@ -20,6 +20,7 @@ class EditorToBaseLanguageServer() : LanguageServer {
     // the server capabilities
     // the server info
     override fun initialize(params: InitializeParams?): CompletableFuture<InitializeResult?>? {
+        PdeService.instance?.init()
         // Modify params here
         return downstream?.initialize(params)
             ?.thenApply {

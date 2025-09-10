@@ -5,6 +5,9 @@ import org.eclipse.lsp4j.launch.LSPLauncher;
 
 import java.io.IOException;
 
+/*
+* A proxy server that connects an LSP client (like VSCode) to a Java LSP server whilst pre-processing sketches to make them into Java Projects
+ */
 public class PdeLanguageServerProxy {
     static public void main(String[] args) throws IOException {
         // Start the base LSP server process
