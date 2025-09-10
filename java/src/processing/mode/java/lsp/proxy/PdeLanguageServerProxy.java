@@ -1,60 +1,32 @@
 package processing.mode.java.lsp.proxy;
 
-import org.eclipse.lsp4j.InitializeParams;
-import org.eclipse.lsp4j.InitializeResult;
+
 import org.eclipse.lsp4j.launch.LSPLauncher;
-import org.eclipse.lsp4j.services.*;
 
-import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
 
-public class PdeLanguageServerProxy implements LanguageServer, LanguageClientAware {
-    static public void main(String[] args) {
-        var input = System.in;
-        var output = System.out;
-        System.setOut(System.err);
+public class PdeLanguageServerProxy {
+    static public void main(String[] args) throws IOException {
+        var processBuilder = new ProcessBuilder()
+                .command("bash", "-c", "/Applications/Processing.app/Contents/MacOS/Processing lsp");
+        var baseLSP = processBuilder.start();
 
-        var server = new PdeLanguageServerProxy();
-        var launcher =
-                LSPLauncher.createServerLauncher(
-                        server,
-                        input,
-                        output
-                );
-        var client = launcher.getRemoteProxy();
-        server.connect(client);
-        launcher.startListening();
+        var baseIn = baseLSP.getInputStream();
+        var baseOut = baseLSP.getOutputStream();
+        var baseErr = baseLSP.getErrorStream();
 
-        //        Approach 1: Start the PdeProxy and pipe everything else through to the Eclipse JDT LS and modify paths and such at runtime
-        //        Approach 2: Manually write the actions that will send the correct data the Eclipse JDT LS
-    }
+        var baseClient = new BaseLanguageClient();
+        var baseServerLauncher = LSPLauncher.createClientLauncher(baseClient, baseIn, baseOut);
+        var downstreamServer = baseServerLauncher.getRemoteProxy();
+        baseClient.setDownstream(downstreamServer);
+        baseServerLauncher.startListening();
 
-    @Override
-    public void connect(LanguageClient client) {
+        var baseServer = new BaseLanguageServer(downstreamServer);
 
-    }
+        var baseClientLauncher = LSPLauncher.createServerLauncher(baseServer, System.in, System.out);
+        var upstreamClient = baseClientLauncher.getRemoteProxy();
+        baseServer.setUpstream(upstreamClient);
 
-    @Override
-    public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-        return null;
-    }
-
-    @Override
-    public CompletableFuture<Object> shutdown() {
-        return null;
-    }
-
-    @Override
-    public void exit() {
-
-    }
-
-    @Override
-    public TextDocumentService getTextDocumentService() {
-        return null;
-    }
-
-    @Override
-    public WorkspaceService getWorkspaceService() {
-        return null;
+        baseClientLauncher.startListening();
     }
 }
