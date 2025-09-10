@@ -10,26 +10,26 @@ import java.util.concurrent.CompletableFuture
 
 class BaseLanguageClient: LanguageClient {
     var downstream: LanguageServer? = null
+    var upstream: LanguageClient? = null
 
     override fun telemetryEvent(`object`: Any?) {
-        println("Telemetry: $`object`")
+        upstream?.telemetryEvent(`object`)
     }
 
     override fun publishDiagnostics(diagnostics: PublishDiagnosticsParams?) {
-        println("Diagnostics: $diagnostics")
+        upstream?.publishDiagnostics(diagnostics)
     }
 
     override fun showMessage(messageParams: MessageParams?) {
-        println("Message: $messageParams")
+        upstream?.showMessage(messageParams)
     }
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams?): CompletableFuture<MessageActionItem?>? {
-        println("Message request: $requestParams")
-        return CompletableFuture.completedFuture(null)
+        return upstream?.showMessageRequest(requestParams)
     }
 
     override fun logMessage(message: MessageParams?) {
-        TODO("Not yet implemented")
+        upstream?.logMessage(message)
     }
 
 }

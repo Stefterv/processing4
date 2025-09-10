@@ -28,5 +28,6 @@ public class PdeLanguageServerProxy {
         baseServer.setUpstream(upstreamClient);
 
         baseClientLauncher.startListening();
+        baseClient.setUpstream(upstreamClient);
     }
 }
