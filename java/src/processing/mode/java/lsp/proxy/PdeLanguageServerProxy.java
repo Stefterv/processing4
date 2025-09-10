@@ -4,15 +4,22 @@ package processing.mode.java.lsp.proxy;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 
 import java.io.IOException;
+import java.nio.file.Files;
 
 /*
 * A proxy server that connects an LSP client (like VSCode) to a Java LSP server whilst pre-processing sketches to make them into Java Projects
  */
 public class PdeLanguageServerProxy {
     static public void main(String[] args) throws IOException {
+        var tempFolder = Files.createTempDirectory("pde-lsp-proxy-");
         // Start the base LSP server process
         var processBuilder = new ProcessBuilder()
                 .command("bash", "-c", "/Applications/Processing.app/Contents/MacOS/Processing lsp");
+//        var processBuilder = new ProcessBuilder()
+//                .command("/Users/steftervelde/Downloads/jdt-language-server-1.9.0-202203031534/bin/jdtls",
+//                        "-configuration", "/Users/steftervelde/Downloads/jdt-language-server-1.9.0-202203031534/config",
+//                        "-data", tempFolder.toAbsolutePath().toString()
+//                );
         var baseLSPProcess = processBuilder.start();
 
         var baseIn = baseLSPProcess.getInputStream();

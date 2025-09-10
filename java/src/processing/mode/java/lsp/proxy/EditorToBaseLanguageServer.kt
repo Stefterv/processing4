@@ -21,6 +21,7 @@ class EditorToBaseLanguageServer() : LanguageServer {
     // the server info
     override fun initialize(params: InitializeParams?): CompletableFuture<InitializeResult?>? {
         PdeService.instance?.init()
+        params?.workspaceFolders?.forEach { folder -> folder.uri = "file:///Users/steftervelde/Source/Processing-Foundation/processing4/core/examples/result" }
         // Modify params here
         return downstream?.initialize(params)
             ?.thenApply {
