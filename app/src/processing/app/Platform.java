@@ -105,6 +105,9 @@ public class Platform {
                          "An unknown error occurred while trying to load\n" +
                          "platform-specific code for your machine.", e);
     }
+
+    // Fix the issue where `java.home` points to the JRE instead of the JDK. processing/processing4#1163
+    System.setProperty("java.home", getJavaHome().getAbsolutePath());
   }
 
 
@@ -389,21 +392,22 @@ public class Platform {
   }
 
   static public File getJavaHome() {
+    // Get the build in JDK location from the Jetpack Compose resources
     var resourcesDir = System.getProperty("compose.application.resources.dir");
     if(resourcesDir != null) {
-        var jdkFolder = Arrays.stream(new File(resourcesDir).listFiles((dir, name) -> dir.isDirectory() && name.startsWith("jdk-")))
-                .findFirst()
-                .orElse(null);
-        if(Platform.isMacOS()){
-            return new File(jdkFolder, "Contents/Home");
-        }
+      var jdkFolder = new File(resourcesDir,"jdk");
+      if(jdkFolder.exists()){
         return jdkFolder;
+      }
     }
 
+    // If the JDK is set in the environment, use that.
     var home = System.getProperty("java.home");
-    if(home != null && new File(home, "bin/java").exists()){
+    if(home != null){
       return new File(home);
     }
+
+    // Otherwise try to use the Ant embedded JDK.
     if (Platform.isMacOS()) {
       //return "Contents/PlugIns/jdk1.7.0_40.jdk/Contents/Home/jre/bin/java";
       File[] plugins = getContentFile("../PlugIns").listFiles((dir, name) -> dir.isDirectory() &&
