@@ -1061,6 +1061,14 @@ public abstract class Editor extends JFrame implements RunnerListener {
     });
     developMenu.add(updateTrigger);
 
+    var error = new JMenuItem(Language.text("menu.develop.trigger.messages"));
+    error.addActionListener(e -> {
+      Messages.showWarning("Hello", "This is a test of the emergency broadcast system.\n\nIf this had been an actual emergency, you would be instructed to tune to your local news station.", new Exception("This is a test exception for developers."));
+      Messages.showYesNoQuestion(this, "Test Question", "Did you see the exception in the console?", null);
+      Messages.showError("Test Error", "This is a test error message. the editor will quit after this", new Exception("This is a test exception for developers."));
+    });
+    developMenu.add(error);
+
   }
 
   public void updateDevelopMenu(){
