@@ -19,6 +19,13 @@ Capture cam;
 flatCube[][] grid;
 
 void setup() {
+  try {
+    // quicktime.QTSession.open();
+  } 
+  catch (quicktime.QTException qte) { 
+    qte.printStackTrace();
+  }
+
   size (dx,dy,OPENGL);
   int d=day();
   int m=month();
