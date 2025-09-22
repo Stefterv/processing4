@@ -4,12 +4,13 @@ import org.gradle.testkit.runner.GradleRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.processing.java.gradle.ProcessingPlugin
 
 class ProcessingPluginTest{
     @Test
     fun testPluginAddsSketchTask(){
         val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply("processing.java.gradle")
+        project.pluginManager.apply(ProcessingPlugin::class.java)
 
         assert(project.tasks.getByName("sketch") is Task)
     }
