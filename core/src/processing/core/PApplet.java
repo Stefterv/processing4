@@ -802,6 +802,7 @@ public class PApplet implements PConstants {
   // Unlike the others above, needs to be public to support
   // the pixelWidth and pixelHeight fields.
   public int pixelDensity = 1;
+  boolean pixelDensityWarning = false;
 
   boolean present;
 
@@ -913,7 +914,7 @@ public class PApplet implements PConstants {
    * Processing Development Environment (PDE). For example, when
    * using the Eclipse code editor, it's necessary to use
    * <b>settings()</b> to define the <b>size()</b> and
-   * <b>smooth()</b> values for a sketch.</b>.
+   * <b>smooth()</b> values for a sketch.
    * <br /> <br />
    * The <b>settings()</b> method runs before the sketch has been
    * set up, so other Processing functions cannot be used at that
@@ -1082,6 +1083,9 @@ public class PApplet implements PConstants {
   */
   public void pixelDensity(int density) {
     //println(density + " " + this.pixelDensity);
+
+
+    this.pixelDensityWarning = false;
     if (density != this.pixelDensity) {
       if (insideSettings("pixelDensity", density)) {
         if (density != 1 && density != 2) {
@@ -2049,6 +2053,10 @@ public class PApplet implements PConstants {
 
     if (frameCount == 0) {
       setup();
+
+      if(pixelDensityWarning){
+        System.err.println("Warning: Processing now sets pixelDensity(2) by default on high-density screens. This may change how your sketch looks. To revert to the old behavior, set pixelDensity(1) in setup().");
+      }
 
     } else {  // frameCount > 0, meaning an actual draw()
       // update the current frameRate
@@ -10104,6 +10112,9 @@ public class PApplet implements PConstants {
 
     sketch.present = present;
     sketch.fullScreen = fullScreen;
+
+    sketch.pixelDensity = sketch.displayDensity();
+    sketch.pixelDensityWarning = sketch.pixelDensity > 1;
 
     // For 3.0.1, moved this above handleSettings() so that loadImage() can be
     // used inside settings(). Sets a terrible precedent, but the alternative
