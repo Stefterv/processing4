@@ -43,6 +43,62 @@ class ProcessingPluginTest{
         )
     }
 
+    data class TemporaryProcessingLibraryResult(
+        val buildResult: BuildResult,
+        val libraryFolder: File
+    )
+
+    fun createTemporaryProcessingLibrary(name: String): TemporaryProcessingLibraryResult{
+        val directory = TemporaryFolder()
+        directory.create()
+        val libraryFolder = directory.newFolder("libraries",name)
+        directory.newFile("libraries/$name/build.gradle.kts").writeText("""
+            plugins {
+                java
+            }
+            tasks.jar{
+                destinationDirectory.set(file("library"))
+            }
+        """.trimIndent())
+        val srcDirectory = directory.newFolder("libraries", name,"src", "main", "java")
+        directory.newFile("libraries/$name/src/main/java/Example.java").writeText("""
+            package testing.example;
+            
+            public class Example {
+                public void exampleMethod() {
+                    System.out.println("Hello from Example library");
+                }
+            }
+        """.trimIndent())
+        directory.newFile("libraries/$name/settings.gradle.kts")
+        directory.newFile("libraries/$name/library.properties").writeText("""
+            name=$name
+            author=Test Author
+            version=1.0.0
+            sentence=An example library
+            paragraph=This is a longer description of the example library.
+            category=Examples
+            url=http://example.com
+        """.trimIndent())
+
+        if(isDebuggerAttached()){
+            openFolderInFinder(libraryFolder)
+        }
+
+        val buildResult = GradleRunner.create()
+            .withProjectDir(libraryFolder)
+            .withArguments("jar")
+            .withPluginClasspath()
+            .withDebug(true)
+            .build()
+
+
+        return TemporaryProcessingLibraryResult(
+            buildResult,
+            libraryFolder
+        )
+    }
+
     @Test
     fun testSinglePDE(){
         val (buildResult, sketchFolder, classLoader) = createTemporaryProcessingSketch("build"){ sketchFolder ->
@@ -177,7 +233,41 @@ class ProcessingPluginTest{
 
     @Test
     fun testImportingLibrary(){
-        // TODO: Implement a test that imports a Processing library and uses it in the sketch
+        val libraryResult = createTemporaryProcessingLibrary("ExampleLibrary")
+        val (buildResult, sketchFolder, classLoader) = createTemporaryProcessingSketch("build") { sketchFolder ->
+            sketchFolder.resolve("sketch.pde").writeText("""
+                import testing.example.*;
+                
+                Example example;
+                
+                void setup(){
+                    size(100, 100);
+                    example = new Example();
+                    example.exampleMethod();
+                }
+                
+                void draw(){
+                    println("Hello World");
+                }
+            """.trimIndent())
+            sketchFolder.resolve("gradle.properties").writeText(""")
+                processing.sketchbook = ${libraryResult.libraryFolder.parentFile.parentFile.absolutePath}
+            """.trimIndent())
+        }
+
+        val sketchClass = classLoader.loadClass("sketch")
+
+        assert(sketchClass != null) {
+            "Class sketch not found"
+        }
+
+        assert(sketchClass?.methods?.find { method -> method.name == "setup" } != null) {
+            "Method setup not found in class sketch"
+        }
+
+        assert(sketchClass?.methods?.find { method -> method.name == "draw" } != null) {
+            "Method draw not found in class sketch"
+        }
     }
 
     fun isDebuggerAttached(): Boolean {
