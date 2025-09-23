@@ -30,6 +30,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         // TODO: Setup sketchbook when using as a standalone plugin, use the Java Preferences
         val sketchbook = project.findProperty("processing.sketchbook") as String?
         val settings = project.findProperty("processing.settings") as String?
+        val root = project.findProperty("processing.root") as String?
 
         // Apply the Java plugin to the Project, equivalent of
         // plugins {
@@ -180,7 +181,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             val librariesTaskName = sourceSet.getTaskName("scanLibraries", "PDE")
             val librariesScan = project.tasks.register(librariesTaskName, LibrariesTask::class.java) { task ->
                 task.description = "Scans the libraries in the sketchbook"
-                task.libraryDirectories.from(sketchbook?.let { File(it, "libraries") })
+                task.libraryDirectories.from(sketchbook?.let { File(it, "libraries") }, root?.let { File(it).resolve("modes/java/libraries") })
             }
 
             // Create a task to process the .pde files before compiling the java sources

@@ -102,6 +102,7 @@ class GradleJob(
             "version" to getVersionName(),
             "sketchFolder" to sketchFolder,
             "sketchbook" to getSketchbookFolder(),
+            "root" to getContentFile("").absolutePath.replace("""\""", """\\"""),
             "workingDir" to workingDir.toAbsolutePath().toString(),
             "settings" to getSettingsFolder().absolutePath.toString(),
             "unsaved" to unsaved.joinToString(","),
