@@ -55,7 +55,7 @@ abstract class LibrariesTask : DefaultTask() {
                     .listFiles{ file -> file.extension == "jar" }
                     ?.map{ file ->
 
-                        // Inside of each jar, look for the defined classes
+                        // Inside each jar, look for the defined classes
                         val jar = JarFile(file)
                         val classes = jar.entries().asSequence()
                             .filter { entry -> entry.name.endsWith(".class") }

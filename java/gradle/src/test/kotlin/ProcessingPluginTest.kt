@@ -271,6 +271,11 @@ class ProcessingPluginTest{
     }
 
     @Test
+    fun testUseInternalLibraries(){
+
+    }
+
+    @Test
     fun testUseCodeJar(){
         // TODO: test if adding jars to the code folder works
     }
