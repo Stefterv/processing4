@@ -41,7 +41,9 @@ abstract class PDETask : SourceTask() {
     data class SketchMeta(
         val sketchName: String,
         val sketchRenderer: String?,
-        val importStatements: List<String>
+        val importStatements: List<String>,
+        val headerOffset: Int,
+        val edits: List<String>
     ) : Serializable
 
     @TaskAction
@@ -65,15 +67,15 @@ abstract class PDETask : SourceTask() {
             .build()
             .write(javaFile, combined)
 
-        // TODO: Save the edits to meta files
-
         javaFile.flush()
         javaFile.close()
 
         val sketchMeta = SketchMeta(
             sketchName = sketchName,
             sketchRenderer = meta.sketchRenderer,
-            importStatements = meta.importStatements.map { importStatement -> importStatement.packageName }
+            importStatements = meta.importStatements.map { importStatement -> importStatement.packageName },
+            headerOffset = meta.headerOffset,
+            edits = meta.edits.map { it.toString() }
         )
 
         val metaFile = ObjectOutputStream(sketchMetaData.get().asFile.outputStream())

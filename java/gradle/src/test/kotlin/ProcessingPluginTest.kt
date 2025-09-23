@@ -1,5 +1,6 @@
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.UnexpectedBuildFailure
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
@@ -278,6 +279,30 @@ class ProcessingPluginTest{
     @Test
     fun testUseCodeJar(){
         // TODO: test if adding jars to the code folder works
+    }
+
+    @Test
+    fun testBuildFailureOnError(){
+        var failedSuccesfully = false
+        try{
+            val (buildResult, sketchFolder, classLoader) = createTemporaryProcessingSketch("build","--stacktrace"){ sketchFolder ->
+                sketchFolder.resolve("sketch.pde").writeText("""
+                void setup(){
+                    size(100, 100);
+                }
+                
+                void draw(){
+                    // Intentionally cause an error by removing the semicolon
+                    println("Hello World")
+                }
+            """.trimIndent())
+            }
+        }catch (exception: UnexpectedBuildFailure){
+            failedSuccesfully = true
+        }
+        assert(failedSuccesfully) {
+            "Build did not fail on error"
+        }
     }
 
     fun isDebuggerAttached(): Boolean {
