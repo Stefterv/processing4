@@ -1,3 +1,5 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
 plugins {
     java
 }
@@ -61,9 +63,8 @@ val bundle = tasks.register<Copy>("extraResources"){
 tasks.register<Copy>("copyCore"){
     val coreProject = project(":core")
     dependsOn(coreProject.tasks.jar)
-    from(coreProject.tasks.jar) {
-        include("core*.jar")
-    }
+    from(coreProject.tasks.jar)
+    include("core*.jar")
     rename("core.+\\.jar", "core.jar")
     into(coreProject.layout.projectDirectory.dir("library"))
 }
