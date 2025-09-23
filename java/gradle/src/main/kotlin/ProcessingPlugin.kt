@@ -13,7 +13,6 @@ import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
 import java.io.File
 import java.net.Socket
-import java.util.Properties
 import javax.inject.Inject
 
 class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFactory) : Plugin<Project> {
@@ -181,8 +180,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
             val librariesTaskName = sourceSet.getTaskName("scanLibraries", "PDE")
             val librariesScan = project.tasks.register(librariesTaskName, LibrariesTask::class.java) { task ->
                 task.description = "Scans the libraries in the sketchbook"
-                task.librariesDirectory.set(sketchbook?.let { File(it, "libraries") })
-                // TODO: Save the libraries metadata to settings folder to share between sketches
+                task.libraryDirectories.from(sketchbook?.let { File(it, "libraries") })
             }
 
             // Create a task to process the .pde files before compiling the java sources
@@ -198,9 +196,9 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
 
             val depsTaskName = sourceSet.getTaskName("addLegacyDependencies", "PDE")
             project.tasks.register(depsTaskName, DependenciesTask::class.java){ task ->
-                task.librariesMetaData
+                // Link the output of the libraries task to the dependencies task
+                task.librariesMetaData.set(librariesScan.get().librariesMetaData)
                 task.dependsOn(pdeTask, librariesScan)
-                // TODO: Save the libraries metadata to settings folder to share between sketches
             }
 
             // Make sure that the PDE tasks runs before the java compilation task

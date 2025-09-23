@@ -1,10 +1,9 @@
 package org.processing.java.gradle
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -17,19 +16,17 @@ This task stores the resulting information in a file that can be used later to r
  */
 abstract class LibrariesTask : DefaultTask() {
 
-    // TODO: Allow multiple directories
-    @InputDirectory
-    @Optional
-    val librariesDirectory: DirectoryProperty = project.objects.directoryProperty()
+    @InputFiles
+    val libraryDirectories: ConfigurableFileCollection = project.files()
 
     @OutputFile
     val librariesMetaData: RegularFileProperty = project.objects.fileProperty()
 
     init{
-        librariesMetaData.convention(project.layout.buildDirectory.file("processing/libraries"))
+        librariesMetaData.convention { project.gradle.gradleUserHomeDir.resolve("common/processing/libraries") }
     }
 
-    data class Jar(
+     data class Jar(
         val path: File,
         val classes: List<String>
     ) : java.io.Serializable
@@ -40,45 +37,45 @@ abstract class LibrariesTask : DefaultTask() {
 
     @TaskAction
     fun execute() {
-        if (!librariesDirectory.isPresent) {
-            logger.error("Libraries directory is not set. Libraries will not be imported.")
-            val meta = ObjectOutputStream(librariesMetaData.get().asFile.outputStream())
-            meta.writeObject(arrayListOf<Library>())
-            meta.close()
-            return
+        val output = libraryDirectories.flatMap { librariesDirectory ->
+            if (!librariesDirectory.exists()) {
+                logger.error("Libraries directory (${librariesDirectory.path}) does not exist. Libraries will not be imported.")
+                return@flatMap emptyList()
+            }
+            val libraries = librariesDirectory
+                .listFiles { file -> file.isDirectory }
+                ?.map { folder ->
+                    // Find all the jars in the sketchbook
+                    val jars = folder.resolve("library")
+                        .listFiles{ file -> file.extension == "jar" }
+                        ?.map{ file ->
+
+                            // Inside each jar, look for the defined classes
+                            val jar = JarFile(file)
+                            val classes = jar.entries().asSequence()
+                                .filter { entry -> entry.name.endsWith(".class") }
+                                .map { entry -> entry.name }
+                                .map { it.substringBeforeLast('/').replace('/', '.') }
+                                .distinct()
+                                .toList()
+
+                            // Return a reference to the jar and its classes
+                            return@map Jar(
+                                path = file,
+                                classes = classes
+                            )
+                        }?: emptyList()
+
+                    // Save the parsed jars and which folder
+                    return@map Library(
+                        jars = jars
+                    )
+                }?: emptyList()
+
+            return@flatMap libraries
         }
-        val libraries = librariesDirectory.get().asFile
-            .listFiles { file -> file.isDirectory }
-            ?.map { folder ->
-                // Find all the jars in the sketchbook
-                val jars = folder.resolve("library")
-                    .listFiles{ file -> file.extension == "jar" }
-                    ?.map{ file ->
-
-                        // Inside each jar, look for the defined classes
-                        val jar = JarFile(file)
-                        val classes = jar.entries().asSequence()
-                            .filter { entry -> entry.name.endsWith(".class") }
-                            .map { entry -> entry.name }
-                            .map { it.substringBeforeLast('/').replace('/', '.') }
-                            .distinct()
-                            .toList()
-
-                        // Return a reference to the jar and its classes
-                        return@map Jar(
-                            path = file,
-                            classes = classes
-                        )
-                    }?: emptyList()
-
-                // Save the parsed jars and which folder
-                return@map Library(
-                    jars = jars
-                )
-            }?: emptyList()
-
         val meta = ObjectOutputStream(librariesMetaData.get().asFile.outputStream())
-        meta.writeObject(libraries)
+        meta.writeObject(output)
         meta.close()
     }
 }
