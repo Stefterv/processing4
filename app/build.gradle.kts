@@ -1,8 +1,5 @@
 import org.gradle.internal.jvm.Jvm
-import org.gradle.kotlin.dsl.support.zipTo
 import org.gradle.internal.os.OperatingSystem
-import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
-import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.Download
@@ -322,7 +319,6 @@ afterEvaluate{
     }
 }
 
-
 // LEGACY TASKS
 // Most of these are shims to be compatible with the old build system
 // They should be removed in the future, as we work towards making things more Gradle-native
@@ -512,7 +508,7 @@ afterEvaluate {
     tasks.named("prepareAppResources").configure {
         dependsOn("includeProcessingResources")
         // Make sure all libraries are bundled in the maven repository distributed with the app
-        dependsOn(listOf("core","java:preprocessor", "java:gradle", "java:gradle:hotreload").map { project(":$it").tasks.named("publishAllPublicationsToAppRepository") })
+        dependsOn(listOf("app:utils","core","java:preprocessor", "java:gradle", "java:gradle:hotreload").map { project(":$it").tasks.named("publishAllPublicationsToAppRepository") })
     }
     tasks.named("createDistributable").configure {
         dependsOn("includeJdk")
