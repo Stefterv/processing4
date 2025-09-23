@@ -148,6 +148,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 .filterKeys { it.startsWith("processing") }
                 .forEach { (key, value) -> task.systemProperty(key, value) }
 
+            // Connect the stdio to the PDE if ports are specified
             if(logPort != null) task.standardOutput =  Socket("localhost", logPort.toInt()).outputStream
             if(errPort != null) task.errorOutput = Socket("localhost", errPort.toInt()).outputStream
 

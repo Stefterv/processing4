@@ -270,6 +270,11 @@ class ProcessingPluginTest{
         }
     }
 
+    @Test
+    fun testUseCodeJar(){
+        // TODO: test if adding jars to the code folder works
+    }
+
     fun isDebuggerAttached(): Boolean {
         val runtimeMxBean = ManagementFactory.getRuntimeMXBean()
         val inputArguments = runtimeMxBean.inputArguments
