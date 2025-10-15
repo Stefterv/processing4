@@ -1,55 +1,26 @@
 package processing.app.ui
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.MaterialTheme.typography
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.ComposePanel
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
-import androidx.compose.ui.window.rememberWindowState
-import com.formdev.flatlaf.util.SystemInfo
 import processing.app.ui.theme.*
 import com.mikepenz.markdown.compose.Markdown
 import com.mikepenz.markdown.m2.markdownColor
 import com.mikepenz.markdown.m2.markdownTypography
-import com.mikepenz.markdown.model.MarkdownColors
-import com.mikepenz.markdown.model.MarkdownTypography
-import processing.app.Preferences
 import processing.app.Base.getRevision
 import processing.app.Base.getVersionName
 import processing.app.ui.theme.LocalLocale
-import processing.app.ui.theme.LocalTheme
-import processing.app.ui.theme.Locale
-import processing.app.ui.theme.ProcessingTheme
-import java.awt.Cursor
 import java.awt.Dimension
-import java.awt.event.KeyAdapter
-import java.awt.event.KeyEvent
-import java.io.InputStream
-import java.util.Properties
-import javax.swing.JFrame
 import javax.swing.SwingUtilities
 
 
@@ -60,7 +31,7 @@ class WelcomeToBeta {
         @JvmStatic
         fun showWelcomeToBeta() {
             SwingUtilities.invokeLater {
-                PDEWindow("beta.window.title") {
+                PDESwingWindow("beta.window.title") {
                     welcomeToBeta()
                 }
             }
@@ -124,8 +95,10 @@ class WelcomeToBeta {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            pdeapplication("beta.window.title") {
-                welcomeToBeta()
+            application {
+                PDEComposeWindow("beta.window.title") {
+                    welcomeToBeta()
+                }
             }
         }
     }
