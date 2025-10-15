@@ -124,12 +124,13 @@ dependencies {
     implementation(libs.clikt)
     implementation(libs.kotlinxSerializationJson)
 
+    @OptIn(ExperimentalComposeLibrary::class)
+    testImplementation(compose.uiTest)
     testImplementation(kotlin("test"))
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.junitJupiter)
     testImplementation(libs.junitJupiterParams)
-    @OptIn(ExperimentalComposeLibrary::class)
-    testImplementation(compose.uiTest)
+    
 }
 
 tasks.test {
