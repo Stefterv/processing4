@@ -53,7 +53,7 @@ class Welcome @Throws(IOException::class) constructor(base: Base) {
                 modifier = Modifier
                     .background(
                         Brush.linearGradient(
-                            colorStops = arrayOf(0f to Color.Transparent, 1f to Color("#C0D7FF".toColorInt())),
+                            colorStops = arrayOf(0f to Color.Transparent, 1f to Color(0xFFC0D7FF)),
                             start = Offset(815f, 0f),
                             end = Offset(815f * 2, 450f)
                         )

@@ -3,31 +3,75 @@ package processing.app.ui.theme
 import androidx.compose.material.Colors
 import androidx.compose.ui.graphics.Color
 
+class ProcessingColors{
+    companion object{
+        val blue = Color(0xFF0251c8)
+        val lightBlue = Color(0xFF82AFFF)
+
+        val deepBlue = Color(0xFF1e32aa)
+        val darkBlue = Color(0xFF0F195A)
+
+        val white = Color(0xFFFFFFFF)
+        val lightGray = Color(0xFFF5F5F5)
+        val gray = Color(0xFFDBDBDB)
+        val darkGray = Color(0xFF898989)
+        val darkerGray = Color(0xFF727070)
+        val veryDarkGray = Color(0xFF1E1E1E)
+        val black = Color(0xFF0D0D0D)
+
+        val error = Color(0xFFFF5757)
+
+        val p5Light = Color(0xFFfd9db9)
+        val p5Mid = Color(0xFFff4077)
+        val p5Dark = Color(0xFFaf1f42)
+
+        val foundationLight = Color(0xFFd4b2fe)
+        val foundationMid = Color(0xFF9c4bff)
+        val foundationDark = Color(0xFF5501a4)
+
+        val downloadInactive = Color(0xFF8890B3)
+        val downloadBackgroundActive = Color(0x14508BFF)
+    }
+}
+
 val PDELightColors = Colors(
-    primary = Color("#0F195A".toColorInt()),
-    primaryVariant = Color("#1F34AB".toColorInt()),
-    secondary = Color("#82AFFF".toColorInt()),
-    secondaryVariant = Color("#0468FF".toColorInt()),
-    background = Color("#FFFFFF".toColorInt()),
-    surface = Color("#C0D7FF".toColorInt()),
-    error = Color("#0F195A".toColorInt()),
-    onPrimary = Color("#FFFFFF".toColorInt()),
-    onSecondary = Color("#FFFFFF".toColorInt()),
-    onBackground = Color("#0F195A".toColorInt()),
-    onSurface = Color("#FFFFFF".toColorInt()),
-    onError = Color("#0F195A".toColorInt()),
+    primary = ProcessingColors.blue,
+    primaryVariant = ProcessingColors.lightBlue,
+    onPrimary = ProcessingColors.white,
+
+    secondary = ProcessingColors.deepBlue,
+    secondaryVariant = ProcessingColors.darkBlue,
+    onSecondary = ProcessingColors.white,
+
+    background = ProcessingColors.white,
+    onBackground = ProcessingColors.darkBlue,
+
+    surface = ProcessingColors.lightGray,
+    onSurface = ProcessingColors.darkerGray,
+
+    error = ProcessingColors.error,
+    onError = ProcessingColors.white,
+
     isLight = true,
 )
 
-fun String.toColorInt(): Int {
-    if (this[0] == '#') {
-        var color = substring(1).toLong(16)
-        if (length == 7) {
-            color = color or 0x00000000ff000000L
-        } else if (length != 9) {
-            throw IllegalArgumentException("Unknown color")
-        }
-        return color.toInt()
-    }
-    throw IllegalArgumentException("Unknown color")
-}
+val PDEDarkColors = Colors(
+    primary = ProcessingColors.deepBlue,
+    primaryVariant = ProcessingColors.darkBlue,
+    onPrimary = ProcessingColors.white,
+
+    secondary = ProcessingColors.lightBlue,
+    secondaryVariant = ProcessingColors.blue,
+    onSecondary = ProcessingColors.white,
+
+    background = ProcessingColors.veryDarkGray,
+    onBackground = ProcessingColors.white,
+
+    surface = ProcessingColors.darkerGray,
+    onSurface = ProcessingColors.lightGray,
+
+    error = ProcessingColors.error,
+    onError = ProcessingColors.white,
+
+    isLight = false,
+)
