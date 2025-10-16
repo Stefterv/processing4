@@ -17,6 +17,7 @@ plugins{
 
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
+
     alias(libs.plugins.serialization)
     alias(libs.plugins.download)
 }
@@ -108,13 +109,13 @@ dependencies {
 
     implementation(compose.runtime)
     implementation(compose.foundation)
-    implementation(compose.material3)
     implementation(compose.ui)
     implementation(compose.components.resources)
     implementation(compose.components.uiToolingPreview)
     implementation(compose.materialIconsExtended)
 
     implementation(compose.desktop.currentOs)
+    implementation(libs.material3)
 
     implementation(libs.compottie)
     implementation(libs.kaml)

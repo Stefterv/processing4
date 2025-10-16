@@ -1,6 +1,7 @@
 package processing.app.ui.theme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +22,9 @@ import androidx.compose.material.ChipDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FilterChip
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.IconToggleButton
@@ -99,22 +102,24 @@ fun ProcessingTheme(
         val theme = ProcessingTheme(preferences.getProperty("theme"))
         CompositionLocalProvider(LocalProcessingTheme provides theme) {
             LocaleProvider {
-                MaterialTheme(
-                    colors = if(darkTheme) PDEDarkColors else PDELightColors,
-                    typography = PDETypography,
-                    shapes = PDEShapes
-                ){
-                    CompositionLocalProvider(
-                        LocalRippleConfiguration provides RippleConfiguration(
-                            color = MaterialTheme.colors.primary,
-                        )
+                androidx.compose.material3.MaterialTheme{
+                    MaterialTheme(
+                        colors = if (darkTheme) PDEDarkColors else PDELightColors,
+                        typography = PDETypography,
+                        shapes = PDEShapes
                     ) {
-                        Box(modifier = Modifier.background(MaterialTheme.colors.background).fillMaxSize()) {
-                            Surface(
-                                color = MaterialTheme.colors.background,
-                                contentColor = MaterialTheme.colors.onBackground
-                            ) {
-                                content()
+                        CompositionLocalProvider(
+                            LocalRippleConfiguration provides RippleConfiguration(
+                                color = MaterialTheme.colors.primary,
+                            )
+                        ) {
+                            Box(modifier = Modifier.background(MaterialTheme.colors.background).fillMaxSize()) {
+                                Surface(
+                                    color = MaterialTheme.colors.background,
+                                    contentColor = MaterialTheme.colors.onBackground
+                                ) {
+                                    content()
+                                }
                             }
                         }
                     }
@@ -214,6 +219,9 @@ fun main(){
                             }
                         }
                         ComponentPreview("Buttons") {
+                            androidx.compose.material3.Button(onClick = {}) {
+                                Text("Material3 Button")
+                            }
                             Button(onClick = {}) {
                                 Text("Filled")
                             }
@@ -231,10 +239,6 @@ fun main(){
                             IconButton(onClick = {}) {
                                 Icon(Icons.Default.Map, contentDescription = "Icon Button")
                             }
-                            var state by remember { mutableStateOf(false) }
-                            IconToggleButton(checked = state, onCheckedChange = { state = it }) {
-                                Icon(Icons.Default.Map, contentDescription = "Icon Toggle Button")
-                            }
                         }
                         ComponentPreview("Chip") {
                             Chip(onClick = {}){
@@ -243,33 +247,39 @@ fun main(){
                             Chip(onClick = {}, colors = ChipDefaults.outlinedChipColors(), border = ChipDefaults.outlinedBorder){
                                 Text("Outlined")
                             }
+                            FilterChip(selected = false, onClick = {}){
+                                Text("Filter not Selected")
+                            }
+                            FilterChip(selected = true, onClick = {}){
+                                Text("Filter Selected")
+                            }
                         }
                         ComponentPreview("Progress Indicator") {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)){
-                                CircularProgressIndicator()
-                                LinearProgressIndicator()
+                                androidx.compose.material3.CircularProgressIndicator()
+                                androidx.compose.material3.LinearProgressIndicator()
                             }
                         }
                         ComponentPreview("Radio Button") {
                             var state by remember { mutableStateOf(true) }
-                            RadioButton(!state, onClick = { state = false })
-                            RadioButton(state, onClick = { state = true })
+                            androidx.compose.material3.RadioButton(!state, onClick = { state = false })
+                            androidx.compose.material3.RadioButton(state, onClick = { state = true })
 
                         }
                         ComponentPreview("Checkbox") {
                             var state by remember { mutableStateOf(true) }
-                            Checkbox(state, onCheckedChange = { state = it })
-                            Checkbox(!state, onCheckedChange = { state = !it })
-                            Checkbox(state, onCheckedChange = {}, enabled = false)
-                            TriStateCheckbox(ToggleableState.Indeterminate, onClick = {})
+                            androidx.compose.material3.Checkbox(state, onCheckedChange = { state = it })
+                            androidx.compose.material3.Checkbox(!state, onCheckedChange = { state = !it })
+                            androidx.compose.material3.Checkbox(state, onCheckedChange = {}, enabled = false)
+                            androidx.compose.material3.TriStateCheckbox(ToggleableState.Indeterminate, onClick = {})
                         }
                         ComponentPreview("Switch") {
                             var state by remember { mutableStateOf(true) }
-                            Switch(state, onCheckedChange = { state = it })
+                            androidx.compose.material3.Switch(state, onCheckedChange = { state = it })
                         }
                         ComponentPreview("Slider") {
                             var state by remember { mutableStateOf(0f) }
-                            Slider(state, onValueChange = { state = it })
+                            androidx.compose.material3.Slider(state, onValueChange = { state = it })
 
                         }
                         ComponentPreview("Badge") {
@@ -291,28 +301,35 @@ fun main(){
                         ComponentPreview("Text Field") {
                             Row {
                                 var text by remember { mutableStateOf("Text Field") }
-                                TextField(text, onValueChange = { text = it })
+                                androidx.compose.material3.TextField(text, onValueChange = { text = it })
                             }
                             var text by remember { mutableStateOf("Outlined Text Field") }
-                            OutlinedTextField(text, onValueChange = { text = it})
+                            androidx.compose.material3.OutlinedTextField(text, onValueChange = { text = it})
                         }
                         ComponentPreview("Dropdown Menu") {
                             var show by remember { mutableStateOf(false) }
-                            Chip(onClick = {
-                                show = true
-                            }){
-                                Text("Dropdown Menu")
-                            }
+                            TextField("Dropdown", onValueChange = {}, readOnly = true, modifier = Modifier
+                                .padding(8.dp)
+                                .background(Color.Transparent)
+                                .clickable { show = true }
+                            )
                             DropdownMenu(
                                 expanded = show,
                                 onDismissRequest = {
                                     show = false
                                 },
                             ) {
-                                Text("Menu Item 1", modifier = Modifier.padding(8.dp))
-                                Text("Menu Item 2", modifier = Modifier.padding(8.dp))
-                                Text("Menu Item 3", modifier = Modifier.padding(8.dp))
+                                DropdownMenuItem(onClick = { show = false }) {
+                                    Text("Menu Item 1", modifier = Modifier.padding(8.dp))
+                                }
+                                DropdownMenuItem(onClick = { show = false }) {
+                                    Text("Menu Item 2", modifier = Modifier.padding(8.dp))
+                                }
+                                DropdownMenuItem(onClick = { show = false }) {
+                                    Text("Menu Item 3", modifier = Modifier.padding(8.dp))
+                                }
                             }
+
 
                         }
 
