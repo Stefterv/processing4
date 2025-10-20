@@ -129,6 +129,28 @@ fun main() {
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                     Button(
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                                        onClick = {}) {
+                                        Text("Primary Container", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    }
+                                    Button(
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                                        onClick = {}) {
+                                        Text("Secondary Container", color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    }
+                                    Button(
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                                        onClick = {}) {
+                                        Text("Tertiary Container", color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                    }
+                                    Button(
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                                        onClick = {}) {
+                                        Text("Error Container", color = MaterialTheme.colorScheme.onErrorContainer)
+                                    }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    Button(
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background),
                                         onClick = {}) {
                                         Text("Background", color = MaterialTheme.colorScheme.onBackground)
@@ -137,6 +159,11 @@ fun main() {
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                                         onClick = {}) {
                                         Text("Surface", color = MaterialTheme.colorScheme.onSurface)
+                                    }
+                                    Button(
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        onClick = {}) {
+                                        Text("Surface Variant", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Button(
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -221,9 +248,10 @@ fun main() {
                         ComponentPreview("Switch") {
                             var state by remember { mutableStateOf(true) }
                             Switch(state, onCheckedChange = { state = it })
+                            Switch(!state, enabled = false, onCheckedChange = { state = it })
                         }
                         ComponentPreview("Slider") {
-                            var state by remember { mutableStateOf(0f) }
+                            var state by remember { mutableStateOf(0.5f) }
                             Slider(state, onValueChange = { state = it })
 
                         }

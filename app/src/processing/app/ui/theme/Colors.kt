@@ -23,6 +23,7 @@ class ProcessingColors{
         val black = Color(0xFF0D0D0D)
 
         val error = Color(0xFFFF5757)
+        val errorContainer = Color(0xFFFFA6A6)
 
         val p5Light = Color(0xFFfd9db9)
         val p5Mid = Color(0xFFff4077)
@@ -85,11 +86,20 @@ val PDE3LightColor = lightColorScheme(
     primary =  ProcessingColors.blue,
     onPrimary = ProcessingColors.white,
 
+    primaryContainer = ProcessingColors.downloadBackgroundActive,
+    onPrimaryContainer = ProcessingColors.darkBlue,
+
     secondary = ProcessingColors.deepBlue,
     onSecondary = ProcessingColors.white,
 
-    tertiary = ProcessingColors.lightBlue,
+    secondaryContainer = ProcessingColors.downloadInactive,
+    onSecondaryContainer = ProcessingColors.white,
+
+    tertiary = ProcessingColors.p5Mid,
     onTertiary = ProcessingColors.white,
+
+    tertiaryContainer = ProcessingColors.p5Light,
+    onTertiaryContainer = ProcessingColors.p5Dark,
 
     background = ProcessingColors.white,
     onBackground = ProcessingColors.darkBlue,
@@ -99,6 +109,9 @@ val PDE3LightColor = lightColorScheme(
 
     error = ProcessingColors.error,
     onError = ProcessingColors.white,
+
+    errorContainer = ProcessingColors.errorContainer,
+    onErrorContainer = ProcessingColors.white
 )
 
 val PDE3DarkColor = darkColorScheme(
