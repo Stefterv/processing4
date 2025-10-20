@@ -102,7 +102,7 @@ fun ProcessingTheme(
         val theme = ProcessingTheme(preferences.getProperty("theme"))
         CompositionLocalProvider(LocalProcessingTheme provides theme) {
             LocaleProvider {
-                androidx.compose.material3.MaterialTheme{
+                MaterialTheme{
                     MaterialTheme(
                         colors = if (darkTheme) PDEDarkColors else PDELightColors,
                         typography = PDETypography,
@@ -219,9 +219,6 @@ fun main(){
                             }
                         }
                         ComponentPreview("Buttons") {
-                            androidx.compose.material3.Button(onClick = {}) {
-                                Text("Material3 Button")
-                            }
                             Button(onClick = {}) {
                                 Text("Filled")
                             }
@@ -256,30 +253,30 @@ fun main(){
                         }
                         ComponentPreview("Progress Indicator") {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)){
-                                androidx.compose.material3.CircularProgressIndicator()
-                                androidx.compose.material3.LinearProgressIndicator()
+                                CircularProgressIndicator()
+                                LinearProgressIndicator()
                             }
                         }
                         ComponentPreview("Radio Button") {
                             var state by remember { mutableStateOf(true) }
-                            androidx.compose.material3.RadioButton(!state, onClick = { state = false })
-                            androidx.compose.material3.RadioButton(state, onClick = { state = true })
+                            RadioButton(!state, onClick = { state = false })
+                            RadioButton(state, onClick = { state = true })
 
                         }
                         ComponentPreview("Checkbox") {
                             var state by remember { mutableStateOf(true) }
-                            androidx.compose.material3.Checkbox(state, onCheckedChange = { state = it })
-                            androidx.compose.material3.Checkbox(!state, onCheckedChange = { state = !it })
-                            androidx.compose.material3.Checkbox(state, onCheckedChange = {}, enabled = false)
-                            androidx.compose.material3.TriStateCheckbox(ToggleableState.Indeterminate, onClick = {})
+                            Checkbox(state, onCheckedChange = { state = it })
+                            Checkbox(!state, onCheckedChange = { state = !it })
+                            Checkbox(state, onCheckedChange = {}, enabled = false)
+                            TriStateCheckbox(ToggleableState.Indeterminate, onClick = {})
                         }
                         ComponentPreview("Switch") {
                             var state by remember { mutableStateOf(true) }
-                            androidx.compose.material3.Switch(state, onCheckedChange = { state = it })
+                            Switch(state, onCheckedChange = { state = it })
                         }
                         ComponentPreview("Slider") {
                             var state by remember { mutableStateOf(0f) }
-                            androidx.compose.material3.Slider(state, onValueChange = { state = it })
+                            Slider(state, onValueChange = { state = it })
 
                         }
                         ComponentPreview("Badge") {
@@ -301,10 +298,10 @@ fun main(){
                         ComponentPreview("Text Field") {
                             Row {
                                 var text by remember { mutableStateOf("Text Field") }
-                                androidx.compose.material3.TextField(text, onValueChange = { text = it })
+                                TextField(text, onValueChange = { text = it })
                             }
                             var text by remember { mutableStateOf("Outlined Text Field") }
-                            androidx.compose.material3.OutlinedTextField(text, onValueChange = { text = it})
+                            OutlinedTextField(text, onValueChange = { text = it})
                         }
                         ComponentPreview("Dropdown Menu") {
                             var show by remember { mutableStateOf(false) }
