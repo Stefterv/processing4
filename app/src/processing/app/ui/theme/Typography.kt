@@ -106,3 +106,21 @@ val PDETypography = Typography(
         lineHeight = 10.sp
     )
 )
+val base = androidx.compose.material3.Typography()
+val PDE3Typography = androidx.compose.material3.Typography(
+     displayLarge = base.displayLarge.copy(fontFamily = spaceGroteskFont),
+     displayMedium = base.displayMedium.copy(fontFamily = spaceGroteskFont),
+     displaySmall = base.displaySmall.copy(fontFamily = spaceGroteskFont),
+     headlineLarge = base.headlineLarge.copy(fontFamily = spaceGroteskFont),
+     headlineMedium = base.headlineMedium.copy(fontFamily = spaceGroteskFont),
+     headlineSmall = base.headlineSmall.copy(fontFamily = spaceGroteskFont),
+     titleLarge = base.titleLarge.copy(fontFamily = spaceGroteskFont),
+     titleMedium = base.titleMedium.copy(fontFamily = spaceGroteskFont),
+     titleSmall = base.titleSmall.copy(fontFamily = spaceGroteskFont),
+     bodyLarge = base.bodyLarge.copy(fontFamily = spaceGroteskFont),
+     bodyMedium = base.bodyMedium.copy(fontFamily = spaceGroteskFont),
+     bodySmall = base.bodySmall.copy(fontFamily = spaceGroteskFont),
+     labelLarge = base.labelLarge.copy(fontFamily = spaceGroteskFont),
+     labelMedium = base.labelMedium.copy(fontFamily = spaceGroteskFont),
+     labelSmall = base.labelSmall.copy(fontFamily = spaceGroteskFont),
+)

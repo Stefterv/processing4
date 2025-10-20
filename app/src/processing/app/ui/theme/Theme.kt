@@ -11,42 +11,36 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Badge
-import androidx.compose.material.BadgedBox
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
-import androidx.compose.material.Checkbox
-import androidx.compose.material.Chip
-import androidx.compose.material.ChipDefaults
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Divider
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.FilterChip
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.IconToggleButton
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.LocalRippleConfiguration
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.RadioButton
-import androidx.compose.material.RippleConfiguration
-import androidx.compose.material.Slider
-import androidx.compose.material.Surface
-import androidx.compose.material.Switch
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TextField
-import androidx.compose.material.TriStateCheckbox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,81 +48,41 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import processing.app.LocalPreferences
 import processing.app.PreferencesProvider
-import java.io.InputStream
-import java.util.Properties
 
-class ProcessingTheme(themeFile: String? = "") : Properties() {
-    init {
-        load(ClassLoader.getSystemResourceAsStream("theme.txt"))
-        load(ClassLoader.getSystemResourceAsStream(themeFile ?: "") ?: InputStream.nullInputStream())
-    }
-    fun getColor(key: String): Color {
-        return Color(getProperty(key).toColorInt())
-    }
-
-    fun String.toColorInt(): Int {
-        if (this[0] == '#') {
-            var color = substring(1).toLong(16)
-            if (length == 7) {
-                color = color or 0x00000000ff000000L
-            } else if (length != 9) {
-                throw IllegalArgumentException("Unknown color")
-            }
-            return color.toInt()
-        }
-        throw IllegalArgumentException("Unknown color")
-    }
-}
-
-val LocalProcessingTheme = compositionLocalOf<ProcessingTheme> { error("No theme provided") }
-
-@Deprecated("Use PDETheme instead", ReplaceWith("PDETheme"))
 @Composable
-fun ProcessingTheme(
+fun PDETheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable() () -> Unit
-) {
+    content: @Composable () -> Unit
+){
     PreferencesProvider {
-        val preferences = LocalPreferences.current
-        val theme = ProcessingTheme(preferences.getProperty("theme"))
-        CompositionLocalProvider(LocalProcessingTheme provides theme) {
-            LocaleProvider {
-                MaterialTheme(
-                    colors = if (darkTheme) PDEDarkColors else PDELightColors,
-                    typography = PDETypography,
-                    shapes = PDEShapes
-                ) {
+        LocaleProvider {
+            MaterialTheme(
+                colorScheme = if(darkTheme) PDE3DarkColor else PDE3LightColor,
+                typography = PDE3Typography
+            ){
+                Box(modifier = Modifier.background(color = MaterialTheme.colorScheme.background).fillMaxSize()) {
                     CompositionLocalProvider(
-                        LocalRippleConfiguration provides RippleConfiguration(
-                            color = MaterialTheme.colors.primary,
-                        )
-                    ) {
-                        Box(modifier = Modifier.background(MaterialTheme.colors.background).fillMaxSize()) {
-                            Surface(
-                                color = MaterialTheme.colors.background,
-                                contentColor = MaterialTheme.colors.onBackground
-                            ) {
-                                content()
-                            }
-                        }
-                    }
+                        LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+                        LocalDensity provides Density(1.25f, 1.25f),
+                        content = content
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
-fun main(){
+fun main() {
     application {
         val windowState = rememberWindowState(
             size = DpSize(800.dp, 600.dp),
@@ -136,9 +90,9 @@ fun main(){
         )
         var darkTheme by remember { mutableStateOf(false) }
         Window(onCloseRequest = ::exitApplication, state = windowState, title = "Processing Theme") {
-            ProcessingTheme(darkTheme) {
+            PDETheme(darkTheme) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Processing Theme Components", style = MaterialTheme.typography.h1)
+                    Text("Processing Theme Components", style = MaterialTheme.typography.titleLarge)
                     Card {
                         Row {
                             Checkbox(darkTheme, onCheckedChange = { darkTheme = !darkTheme })
@@ -158,62 +112,61 @@ fun main(){
                             Column {
                                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                     Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         onClick = {}) {
-                                        Text("Primary", color = MaterialTheme.colors.onPrimary)
+                                        Text("Primary", color = MaterialTheme.colorScheme.onPrimary)
                                     }
                                     Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primaryVariant),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                                         onClick = {}) {
-                                        Text("Primary Variant", color = MaterialTheme.colors.onPrimary)
+                                        Text("Secondary", color = MaterialTheme.colorScheme.onSecondary)
                                     }
                                     Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                                         onClick = {}) {
-                                        Text("Secondary", color = MaterialTheme.colors.onSecondary)
-                                    }
-                                    Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondaryVariant),
-                                        onClick = {}) {
-                                        Text("Secondary Variant", color = MaterialTheme.colors.onSecondary)
+                                        Text("Tertiary", color = MaterialTheme.colorScheme.onTertiary)
                                     }
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                     Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background),
                                         onClick = {}) {
-                                        Text("Background", color = MaterialTheme.colors.onBackground)
+                                        Text("Background", color = MaterialTheme.colorScheme.onBackground)
                                     }
                                     Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.surface),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                                         onClick = {}) {
-                                        Text("Surface", color = MaterialTheme.colors.onSurface)
+                                        Text("Surface", color = MaterialTheme.colorScheme.onSurface)
                                     }
                                     Button(
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                                         onClick = {}) {
-                                        Text("Error", color = MaterialTheme.colors.onError)
+                                        Text("Error", color = MaterialTheme.colorScheme.onError)
                                     }
                                 }
                             }
                         }
                         ComponentPreview("Text & Fonts") {
                             Column {
-                                Text("Heading 1", style = MaterialTheme.typography.h1)
-                                Text("Heading 2", style = MaterialTheme.typography.h2)
-                                Text("Heading 3", style = MaterialTheme.typography.h3)
-                                Text("Heading 4", style = MaterialTheme.typography.h4)
-                                Text("Heading 5", style = MaterialTheme.typography.h5)
-                                Text("Heading 6", style = MaterialTheme.typography.h6)
+                                Text("displayLarge", style = MaterialTheme.typography.displayLarge)
+                                Text("displayMedium", style = MaterialTheme.typography.displayMedium)
+                                Text("displaySmall", style = MaterialTheme.typography.displaySmall)
 
-                                Text("Subtitle 1", style = MaterialTheme.typography.subtitle1)
-                                Text("Subtitle 2", style = MaterialTheme.typography.subtitle2)
+                                Text("headlineLarge", style = MaterialTheme.typography.headlineLarge)
+                                Text("headlineMedium", style = MaterialTheme.typography.headlineMedium)
+                                Text("headlineSmall", style = MaterialTheme.typography.headlineSmall)
 
-                                Text("Body 1", style = MaterialTheme.typography.body1)
-                                Text("Body 2", style = MaterialTheme.typography.body2)
+                                Text("titleLarge", style = MaterialTheme.typography.titleLarge)
+                                Text("titleMedium", style = MaterialTheme.typography.titleMedium)
+                                Text("titleSmall", style = MaterialTheme.typography.titleSmall)
 
-                                Text("Caption", style = MaterialTheme.typography.caption)
-                                Text("Overline", style = MaterialTheme.typography.overline)
+                                Text("bodyLarge", style = MaterialTheme.typography.bodyLarge)
+                                Text("bodyMedium", style = MaterialTheme.typography.bodyMedium)
+                                Text("bodySmall", style = MaterialTheme.typography.bodySmall)
+
+                                Text("labelLarge", style = MaterialTheme.typography.labelLarge)
+                                Text("labelMedium", style = MaterialTheme.typography.labelMedium)
+                                Text("labelSmall", style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         ComponentPreview("Buttons") {
@@ -236,18 +189,15 @@ fun main(){
                             }
                         }
                         ComponentPreview("Chip") {
-                            Chip(onClick = {}){
-                                Text("Chip")
-                            }
-                            Chip(onClick = {}, colors = ChipDefaults.outlinedChipColors(), border = ChipDefaults.outlinedBorder){
-                                Text("Outlined")
-                            }
-                            FilterChip(selected = false, onClick = {}){
+                            AssistChip(onClick = {}, label = {
+                                Text("Assist Chip")
+                            })
+                            FilterChip(selected = false, onClick = {}, label = {
                                 Text("Filter not Selected")
-                            }
-                            FilterChip(selected = true, onClick = {}){
+                            })
+                            FilterChip(selected = true, onClick = {}, label = {
                                 Text("Filter Selected")
-                            }
+                            })
                         }
                         ComponentPreview("Progress Indicator") {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)){
@@ -303,10 +253,9 @@ fun main(){
                         }
                         ComponentPreview("Dropdown Menu") {
                             var show by remember { mutableStateOf(false) }
-                            TextField("Dropdown", onValueChange = {}, readOnly = true, modifier = Modifier
-                                .padding(8.dp)
-                                .background(Color.Transparent)
-                                .clickable { show = true }
+                            AssistChip(
+                                onClick = { show = true },
+                                label = { Text("Show Menu") }
                             )
                             DropdownMenu(
                                 expanded = show,
@@ -314,15 +263,15 @@ fun main(){
                                     show = false
                                 },
                             ) {
-                                DropdownMenuItem(onClick = { show = false }) {
+                                DropdownMenuItem(onClick = { show = false }, text = {
                                     Text("Menu Item 1", modifier = Modifier.padding(8.dp))
-                                }
-                                DropdownMenuItem(onClick = { show = false }) {
+                                })
+                                DropdownMenuItem(onClick = { show = false }, text = {
                                     Text("Menu Item 2", modifier = Modifier.padding(8.dp))
-                                }
-                                DropdownMenuItem(onClick = { show = false }) {
+                                })
+                                DropdownMenuItem(onClick = { show = false }, text = {
                                     Text("Menu Item 3", modifier = Modifier.padding(8.dp))
-                                }
+                                })
                             }
 
 
@@ -345,11 +294,11 @@ fun main(){
 @Composable
 private fun ComponentPreview(title: String, content: @Composable () -> Unit) {
     Column {
-        Text(title, style = MaterialTheme.typography.h4)
-        Divider()
+        Text(title, style = MaterialTheme.typography.titleLarge)
+        HorizontalDivider()
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(vertical = 8.dp)) {
             content()
         }
-        Divider()
+        HorizontalDivider()
     }
 }

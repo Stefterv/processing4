@@ -1,6 +1,9 @@
 package processing.app.ui.theme
 
 import androidx.compose.material.Colors
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 class ProcessingColors{
@@ -34,6 +37,7 @@ class ProcessingColors{
     }
 }
 
+@Deprecated("Use PDE3LightColor instead")
 val PDELightColors = Colors(
     primary = ProcessingColors.blue,
     primaryVariant = ProcessingColors.lightBlue,
@@ -55,6 +59,7 @@ val PDELightColors = Colors(
     isLight = true,
 )
 
+@Deprecated("Use PDE3DarkColor instead")
 val PDEDarkColors = Colors(
     primary = ProcessingColors.deepBlue,
     primaryVariant = ProcessingColors.darkBlue,
@@ -74,4 +79,44 @@ val PDEDarkColors = Colors(
     onError = ProcessingColors.white,
 
     isLight = false,
+)
+
+val PDE3LightColor = lightColorScheme(
+    primary =  ProcessingColors.blue,
+    onPrimary = ProcessingColors.white,
+
+    secondary = ProcessingColors.deepBlue,
+    onSecondary = ProcessingColors.white,
+
+    tertiary = ProcessingColors.lightBlue,
+    onTertiary = ProcessingColors.white,
+
+    background = ProcessingColors.white,
+    onBackground = ProcessingColors.darkBlue,
+
+    surface = ProcessingColors.lightGray,
+    onSurface = ProcessingColors.darkerGray,
+
+    error = ProcessingColors.error,
+    onError = ProcessingColors.white,
+)
+
+val PDE3DarkColor = darkColorScheme(
+    primary =  ProcessingColors.deepBlue,
+    onPrimary = ProcessingColors.white,
+
+    secondary = ProcessingColors.lightBlue,
+    onSecondary = ProcessingColors.white,
+
+    tertiary = ProcessingColors.blue,
+    onTertiary = ProcessingColors.white,
+
+    background = ProcessingColors.veryDarkGray,
+    onBackground = ProcessingColors.white,
+
+    surface = ProcessingColors.darkerGray,
+    onSurface = ProcessingColors.lightGray,
+
+    error = ProcessingColors.error,
+    onError = ProcessingColors.white,
 )
