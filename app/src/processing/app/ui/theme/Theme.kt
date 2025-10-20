@@ -67,7 +67,7 @@ fun PDETheme(
     PreferencesProvider {
         LocaleProvider {
             MaterialTheme(
-                colorScheme = if(darkTheme) PDE3DarkColor else PDE3LightColor,
+                colorScheme = if(darkTheme) darkScheme else lightScheme,
                 typography = PDE3Typography
             ){
                 Box(modifier = Modifier.background(color = MaterialTheme.colorScheme.background).fillMaxSize()) {
