@@ -1,5 +1,6 @@
 package processing.app.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
@@ -119,6 +121,9 @@ class Preferences {
                                         val filtered = mutableStateMapOf<PDEPreferenceGroup, List<PDEPreference>>()
                                         for((group, preferences) in groups){
                                             val matching = preferences.filter { preference ->
+                                                if(preference.key == "other"){
+                                                    return@filter true
+                                                }
                                                 if(preference.key.contains(it, ignoreCase = true)){
                                                     return@filter true
                                                 }
@@ -156,11 +161,11 @@ class Preferences {
                             }
                             val prefs = LocalPreferences.current
                             val preferences = visible[selected] ?: emptyList()
-                            LazyColumn {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 items(preferences){ preference ->
                                     Text(
                                         text = locale[preference.descriptionKey],
-                                        modifier = Modifier.padding(20.dp),
+                                        modifier = Modifier.padding(horizontal = 20.dp),
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     preference.control(prefs[preference.key]) { newValue ->
