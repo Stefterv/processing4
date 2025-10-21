@@ -1,7 +1,6 @@
 package processing.app.ui.theme
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Density
@@ -60,6 +58,30 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import processing.app.PreferencesProvider
 
+/**
+ * Processing Theme for Jetpack Compose Desktop
+ * Based on Material3
+ *
+ * Makes Material3 components follow Processing color scheme and typography
+ * We experimented with using the material3 theme builder, but it made it look too Android-y
+ * So we defined our own color scheme and typography based on Processing design guidelines
+ *
+ * This composable also provides Preferences and Locale context to all child composables
+ *
+ * Also, important: sets a default density of 1.25 for better scaling on desktop screens, [LocalDensity]
+ *
+ * Usage:
+ * ```
+ * PDETheme {
+ *    val pref = LocalPreferences.current
+ *    val locale = LocalLocale.current
+ *    ...
+ *    // Your composables here
+ * }
+ * ```
+ *
+ * @param darkTheme Whether to use dark theme or light theme. Defaults to system setting.
+ */
 @Composable
 fun PDETheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -68,8 +90,8 @@ fun PDETheme(
     PreferencesProvider {
         LocaleProvider {
             MaterialTheme(
-                colorScheme = if(darkTheme) PDE3DarkColor else PDE3LightColor,
-                typography = PDE3Typography
+                colorScheme = if(darkTheme) PDEDarkColor else PDELightColor,
+                typography = PDETypography
             ){
                 Box(modifier = Modifier.background(color = MaterialTheme.colorScheme.background).fillMaxSize()) {
                     CompositionLocalProvider(
@@ -83,6 +105,11 @@ fun PDETheme(
     }
 }
 
+/**
+ * Simple app to preview the Processing Theme components
+ * Includes buttons, text fields, checkboxes, sliders, etc.
+ * Run by executing the main() function by clicking the green arrow next to it in intelliJ IDEA
+ */
 fun main() {
     application {
         val windowState = rememberWindowState(
@@ -91,7 +118,7 @@ fun main() {
         )
         var darkTheme by remember { mutableStateOf(false) }
         Window(onCloseRequest = ::exitApplication, state = windowState, title = "Processing Theme") {
-            PDETheme(darkTheme) {
+            PDETheme(darkTheme = darkTheme) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Processing Theme Components", style = MaterialTheme.typography.titleLarge)
                     Card {

@@ -43,7 +43,8 @@ val spaceGroteskFont = FontFamily(
     )
 )
 
-val PDETypography = Typography(
+@Deprecated("Use PDE3Typography instead")
+val PDE2Typography = Typography(
     defaultFontFamily = spaceGroteskFont,
     h1 = TextStyle(
         fontWeight = FontWeight.Bold,
@@ -107,7 +108,7 @@ val PDETypography = Typography(
     )
 )
 val base = androidx.compose.material3.Typography()
-val PDE3Typography = androidx.compose.material3.Typography(
+val PDETypography = androidx.compose.material3.Typography(
      displayLarge = base.displayLarge.copy(fontFamily = spaceGroteskFont),
      displayMedium = base.displayMedium.copy(fontFamily = spaceGroteskFont),
      displaySmall = base.displaySmall.copy(fontFamily = spaceGroteskFont),

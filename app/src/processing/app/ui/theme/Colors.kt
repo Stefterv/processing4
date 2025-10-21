@@ -1,7 +1,6 @@
 package processing.app.ui.theme
 
 import androidx.compose.material.Colors
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
@@ -39,7 +38,7 @@ class ProcessingColors{
 }
 
 @Deprecated("Use PDE3LightColor instead")
-val PDELightColors = Colors(
+val PDE2LightColors = Colors(
     primary = ProcessingColors.blue,
     primaryVariant = ProcessingColors.lightBlue,
     onPrimary = ProcessingColors.white,
@@ -61,7 +60,7 @@ val PDELightColors = Colors(
 )
 
 @Deprecated("Use PDE3DarkColor instead")
-val PDEDarkColors = Colors(
+val PDE2DarkColors = Colors(
     primary = ProcessingColors.deepBlue,
     primaryVariant = ProcessingColors.darkBlue,
     onPrimary = ProcessingColors.white,
@@ -82,7 +81,7 @@ val PDEDarkColors = Colors(
     isLight = false,
 )
 
-val PDE3LightColor = lightColorScheme(
+val PDELightColor = lightColorScheme(
     primary =  ProcessingColors.blue,
     onPrimary = ProcessingColors.white,
 
@@ -114,7 +113,7 @@ val PDE3LightColor = lightColorScheme(
     onErrorContainer = ProcessingColors.white
 )
 
-val PDE3DarkColor = darkColorScheme(
+val PDEDarkColor = darkColorScheme(
     primary =  ProcessingColors.deepBlue,
     onPrimary = ProcessingColors.white,
 

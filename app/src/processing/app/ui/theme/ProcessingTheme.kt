@@ -27,7 +27,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FilterChip
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.IconToggleButton
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.LocalRippleConfiguration
 import androidx.compose.material.MaterialTheme
@@ -105,9 +104,9 @@ fun ProcessingTheme(
         CompositionLocalProvider(LocalProcessingTheme provides theme,LocalDensity provides Density(1.25f, 1.25f),) {
             LocaleProvider {
                 MaterialTheme(
-                    colors = if (darkTheme) PDEDarkColors else PDELightColors,
-                    typography = PDETypography,
-                    shapes = PDEShapes
+                    colors = if (darkTheme) PDE2DarkColors else PDE2LightColors,
+                    typography = PDE2Typography,
+                    shapes = PDE2Shapes
                 ) {
                     CompositionLocalProvider(
                         LocalRippleConfiguration provides RippleConfiguration(
