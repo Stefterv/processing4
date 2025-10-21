@@ -54,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -100,7 +102,7 @@ fun ProcessingTheme(
     PreferencesProvider {
         val preferences = LocalPreferences.current
         val theme = ProcessingTheme(preferences.getProperty("theme"))
-        CompositionLocalProvider(LocalProcessingTheme provides theme) {
+        CompositionLocalProvider(LocalProcessingTheme provides theme,LocalDensity provides Density(1.25f, 1.25f),) {
             LocaleProvider {
                 MaterialTheme(
                     colors = if (darkTheme) PDEDarkColors else PDELightColors,

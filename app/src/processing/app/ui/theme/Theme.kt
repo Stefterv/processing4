@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
@@ -251,8 +252,12 @@ fun main() {
                             Switch(!state, enabled = false, onCheckedChange = { state = it })
                         }
                         ComponentPreview("Slider") {
-                            var state by remember { mutableStateOf(0.5f) }
-                            Slider(state, onValueChange = { state = it })
+                            Column{
+                                var state by remember { mutableStateOf(0.5f) }
+                                Slider(state, onValueChange = { state = it })
+                                var rangeState by remember { mutableStateOf(0.25f..0.75f) }
+                                RangeSlider(rangeState, onValueChange = { rangeState = it })
+                            }
 
                         }
                         ComponentPreview("Badge") {
