@@ -1,48 +1,104 @@
 package processing.app.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme.colors
-import androidx.compose.material.MaterialTheme.typography
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposePanel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
-import processing.app.ui.theme.*
+import androidx.compose.ui.window.rememberWindowState
+import com.formdev.flatlaf.util.SystemInfo
 import com.mikepenz.markdown.compose.Markdown
-import com.mikepenz.markdown.m2.markdownColor
-import com.mikepenz.markdown.m2.markdownTypography
+import com.mikepenz.markdown.m3.markdownColor
+import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.MarkdownColors
+import com.mikepenz.markdown.model.MarkdownTypography
+import processing.app.Preferences
 import processing.app.Base.getRevision
 import processing.app.Base.getVersionName
 import processing.app.ui.theme.LocalLocale
+import processing.app.ui.theme.Locale
+import processing.app.ui.theme.PDETheme
+import java.awt.Cursor
 import java.awt.Dimension
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
+import java.io.InputStream
+import java.util.Properties
+import javax.swing.JFrame
 import javax.swing.SwingUtilities
 
 
 class WelcomeToBeta {
     companion object{
-        val windowSize = Dimension(400, 200)
+        val windowSize = Dimension(400, 250)
+        val windowTitle = Locale()["beta.window.title"]
 
         @JvmStatic
         fun showWelcomeToBeta() {
+            val mac = SystemInfo.isMacFullWindowContentSupported
             SwingUtilities.invokeLater {
-                PDESwingWindow("beta.window.title") {
-                    welcomeToBeta()
+                JFrame(windowTitle).apply {
+                    val close = {
+                       Preferences.set("update.beta_welcome", getRevision().toString())
+                       dispose()
+                    }
+                    rootPane.putClientProperty("apple.awt.transparentTitleBar", mac)
+                    rootPane.putClientProperty("apple.awt.fullWindowContent", mac)
+                    defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
+                    contentPane.add(ComposePanel().apply {
+                        size = windowSize
+                        setContent {
+                            PDETheme(darkTheme = false) {
+                                Box(modifier = Modifier.padding(top = if (mac) 22.dp else 0.dp)) {
+                                    welcomeToBeta(close)
+                                }
+                            }
+                        }
+                    })
+                    pack()
+                    background = java.awt.Color.white
+                    setLocationRelativeTo(null)
+                    addKeyListener(object : KeyAdapter() {
+                        override fun keyPressed(e: KeyEvent) {
+                            if (e.keyCode == KeyEvent.VK_ESCAPE) close()
+                        }
+                    })
+                    isResizable = false
+                    isVisible = true
+                    requestFocus()
                 }
             }
         }
 
         @Composable
-        fun welcomeToBeta() {
+        fun welcomeToBeta(close: () -> Unit = {}) {
             Row(
                 modifier = Modifier
                     .padding(20.dp, 10.dp)
-                    .size(windowSize.width.dp, windowSize.height.dp),
+                    .fillMaxSize(),
                 horizontalArrangement = Arrangement
                     .spacedBy(20.dp)
             ){
@@ -52,7 +108,7 @@ class WelcomeToBeta {
                     contentDescription = locale["beta.logo"],
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
-                        .size(100.dp, 100.dp)
+                        .size(120.dp)
                         .offset(0.dp, (-25).dp)
                 )
                 Column(
@@ -66,7 +122,7 @@ class WelcomeToBeta {
                 ) {
                     Text(
                         text = locale["beta.title"],
-                        style = typography.subtitle1,
+                        style = typography.titleLarge,
                     )
                     val text = locale["beta.message"]
                         .replace('$' + "version", getVersionName())
@@ -74,18 +130,17 @@ class WelcomeToBeta {
                     Markdown(
                         text,
                         colors = markdownColor(),
-                        typography = markdownTypography(text = typography.body1, link = typography.body1.copy(color = colors.primary)),
+                        typography = markdownTypography(),
                         modifier = Modifier.background(Color.Transparent).padding(bottom = 10.dp)
                     )
                     Row {
-                        val window = LocalWindow.current
                         Spacer(modifier = Modifier.weight(1f))
-                        PDEButton(onClick = {
-                            window.dispose()
+                        Button(onClick = {
+                            close()
                         }) {
                             Text(
                                 text = locale["beta.button"],
-                                color = colors.onPrimary
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -96,8 +151,17 @@ class WelcomeToBeta {
         @JvmStatic
         fun main(args: Array<String>) {
             application {
-                PDEComposeWindow("beta.window.title") {
-                    welcomeToBeta()
+                val windowState = rememberWindowState(
+                    size = windowSize.let { DpSize(it.width.dp, it.height.dp) },
+                    position = WindowPosition(Alignment.Center)
+                )
+
+                Window(onCloseRequest = ::exitApplication, state = windowState, title = windowTitle) {
+                    PDETheme(darkTheme = false) {
+                        welcomeToBeta {
+                            exitApplication()
+                        }
+                    }
                 }
             }
         }
