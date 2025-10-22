@@ -18,7 +18,7 @@ import processing.app.ui.LocalPreferenceGroups
 import processing.app.ui.PDEPreference
 import processing.app.ui.PDEPreferenceGroup
 import processing.app.ui.PDEPreferences
-import processing.app.ui.preferences.General.Companion.general
+import processing.app.ui.preferences.Interface.Companion.interfaceAndFonts
 import processing.app.ui.theme.LocalLocale
 
 class Other {
@@ -28,7 +28,7 @@ class Other {
             icon = {
                 Icon(Icons.Default.Map, contentDescription = "A map icon")
             },
-            after = general
+            after = interfaceAndFonts
         )
         fun register() {
             PDEPreferences.register(
@@ -36,6 +36,7 @@ class Other {
                     key = "other",
                     descriptionKey = "preferences.other",
                     group = other,
+                    noPadding = true,
                     control = { _, _ ->
                         val prefs = LocalPreferences.current
                         val groups = LocalPreferenceGroups.current

@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 import processing.app.LocalPreferences
 import processing.app.ui.preferences.General
+import processing.app.ui.preferences.Interface
 import processing.app.ui.preferences.Other
 import processing.app.ui.theme.LocalLocale
 import processing.app.ui.theme.PDETheme
@@ -55,6 +56,7 @@ class PDEPreferences {
         }
         init{
             General.register()
+            Interface.register()
             Other.register()
         }
 
@@ -160,18 +162,11 @@ class PDEPreferences {
                             ) {
 
                             }
-                            val prefs = LocalPreferences.current
+
                             val preferences = visible[selected] ?: emptyList()
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 items(preferences){ preference ->
-                                    Text(
-                                        text = locale[preference.descriptionKey],
-                                        modifier = Modifier.padding(horizontal = 20.dp),
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    preference.control(prefs[preference.key]) { newValue ->
-                                        prefs[preference.key] = newValue
-                                    }
+                                    preference.showControl()
                                 }
                             }
                         }
@@ -211,13 +206,50 @@ data class PDEPreference(
      * The key in the preferences file used to store this preference.
      */
     val key: String,
+    /**
+     * The key for the description of this preference, used for localization.
+     */
     val descriptionKey: String,
     /**
      * The group this preference belongs to.
      */
     val group: PDEPreferenceGroup,
+    /**
+     * A Composable function that defines the control used to modify this preference.
+     * It takes the current preference value and a function to update the preference.
+     */
     val control: @Composable (preference: String?, updatePreference: (newValue: String) -> Unit) -> Unit = { preference, updatePreference ->  },
+
+    /**
+     * If true, no padding will be applied around this preference's UI.
+     */
+    val noPadding: Boolean = false,
 )
+
+@Composable
+private fun PDEPreference.showControl() {
+    val locale = LocalLocale.current
+    val prefs = LocalPreferences.current
+    Text(
+        text = locale[descriptionKey],
+        modifier = Modifier.padding(horizontal = 20.dp),
+        style = MaterialTheme.typography.titleMedium
+    )
+    val show = @Composable {
+        control(prefs[key]) { newValue ->
+            prefs[key] = newValue
+        }
+    }
+
+    if(noPadding){
+        show()
+    }else{
+        Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+            show()
+        }
+    }
+
+}
 
 data class PDEPreferenceGroup(
     /**

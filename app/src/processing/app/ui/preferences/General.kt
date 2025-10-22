@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import processing.app.Preferences
 import processing.app.SketchName
 import processing.app.ui.PDEPreference
 import processing.app.ui.PDEPreferenceGroup
@@ -68,7 +69,7 @@ class General {
                         Row(
                             modifier = Modifier.padding(horizontal = 20.dp)
                         ) {
-                            for (option in if (false) SketchName.getOptions() else arrayOf(
+                            for (option in if(Preferences.isInitialized()) SketchName.getOptions() else arrayOf(
                                 "timestamp",
                                 "untitled",
                                 "custom"
