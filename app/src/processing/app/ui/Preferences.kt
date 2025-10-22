@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 import processing.app.LocalPreferences
 import processing.app.ui.preferences.General
+import processing.app.ui.preferences.Other
 import processing.app.ui.theme.LocalLocale
 import processing.app.ui.theme.PDETheme
 
@@ -44,7 +45,7 @@ val LocalPreferenceGroups = compositionLocalOf<MutableMap<PDEPreferenceGroup, Li
     error("No Preference Groups Set")
 }
 
-class Preferences {
+class PDEPreferences {
     companion object{
         val groups = mutableStateMapOf<PDEPreferenceGroup, List<PDEPreference>>()
         fun register(preference: PDEPreference) {
@@ -54,8 +55,8 @@ class Preferences {
         }
         init{
             General.register()
+            Other.register()
         }
-
 
         @OptIn(ExperimentalMaterial3Api::class)
         @Composable

@@ -5,26 +5,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import processing.app.LocalPreferences
 import processing.app.SketchName
-import processing.app.ui.LocalPreferenceGroups
 import processing.app.ui.PDEPreference
 import processing.app.ui.PDEPreferenceGroup
-import processing.app.ui.Preferences
-import processing.app.ui.theme.LocalLocale
+import processing.app.ui.PDEPreferences
 
 
 class General {
@@ -35,15 +28,9 @@ class General {
                 Icon(Icons.Default.Settings, contentDescription = "A settings icon")
             }
         )
-        val other = PDEPreferenceGroup(
-            name = "Other",
-            icon = {
-                Icon(Icons.Default.Map, contentDescription = "A map icon")
-            },
-            after = general
-        )
+
         fun register() {
-            Preferences.register(
+            PDEPreferences.register(
                 PDEPreference(
                     key = "sketchbook.path.four",
                     descriptionKey = "preferences.sketchbook_location",
@@ -72,7 +59,7 @@ class General {
                     }
                 )
             )
-            Preferences.register(
+            PDEPreferences.register(
                 PDEPreference(
                     key = "sketch.name.approach",
                     descriptionKey = "preferences.sketch_naming",
@@ -101,7 +88,7 @@ class General {
                     }
                 )
             )
-            Preferences.register(
+            PDEPreferences.register(
                 PDEPreference(
                     key = "update.check",
                     descriptionKey = "preferences.check_for_updates_on_startup",
@@ -117,8 +104,7 @@ class General {
                     }
                 )
             )
-            // show welcome screen
-            Preferences.register(
+            PDEPreferences.register(
                 PDEPreference(
                     key = "welcome.show",
                     descriptionKey = "preferences.show_welcome_screen_on_startup",
@@ -131,43 +117,6 @@ class General {
                                 updatePreference(it.toString())
                             }
                         )
-                    }
-                )
-            )
-
-            Preferences.register(
-                PDEPreference(
-                    key = "other",
-                    descriptionKey = "preferences.other",
-                    group = other,
-                    control = { _, _ ->
-                        val prefs = LocalPreferences.current
-                        val groups = LocalPreferenceGroups.current
-                        val restPrefs = remember {
-                            val keys = prefs.keys.mapNotNull { it as? String }
-                            val existing = groups.values.flatten().map { it.key }
-                            keys.filter { it !in existing }.sorted()
-                        }
-                        val locale = LocalLocale.current
-
-                        for(prefKey in restPrefs){
-                            val value = prefs[prefKey]
-                            Row (
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp)
-                            ){
-                                Text(
-                                    text = locale[prefKey],
-                                    modifier = Modifier.align(Alignment.CenterVertically)
-                                )
-                                TextField(value ?: "", onValueChange = {
-                                    prefs[prefKey] = it
-                                })
-                            }
-                        }
-
                     }
                 )
             )
