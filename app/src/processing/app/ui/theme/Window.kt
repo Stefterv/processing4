@@ -57,7 +57,7 @@ class PDESwingWindow(titleKey: String = "", fullWindowContent: Boolean = false, 
                 if (e.keyCode == KeyEvent.VK_ESCAPE) window.dispose()
             }
         })
-        isResizable = false
+        isResizable = true
         isVisible = true
         requestFocus()
     }
@@ -81,7 +81,7 @@ private fun PDEWindowContent(window: JFrame, titleKey: String, fullWindowContent
     }
 
     CompositionLocalProvider(LocalWindow provides window) {
-        ProcessingTheme {
+        PDETheme {
             val locale = LocalLocale.current
             window.title = locale[titleKey]
             LaunchedEffect(locale) {

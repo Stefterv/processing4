@@ -36,11 +36,14 @@ import androidx.compose.ui.window.application
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 import processing.app.LocalPreferences
+import processing.app.ui.PDEPreferences.Companion.preferences
 import processing.app.ui.preferences.General
 import processing.app.ui.preferences.Interface
 import processing.app.ui.preferences.Other
 import processing.app.ui.theme.LocalLocale
+import processing.app.ui.theme.PDESwingWindow
 import processing.app.ui.theme.PDETheme
+import javax.swing.SwingUtilities
 
 val LocalPreferenceGroups = compositionLocalOf<MutableMap<PDEPreferenceGroup, List<PDEPreference>>> {
     error("No Preference Groups Set")
@@ -175,6 +178,8 @@ class PDEPreferences {
             }
         }
 
+
+
         @JvmStatic
         fun main(args: Array<String>) {
             application {
@@ -265,3 +270,16 @@ data class PDEPreferenceGroup(
      */
     val after: PDEPreferenceGroup? = null,
 )
+
+fun show(){
+    SwingUtilities.invokeLater {
+        PDESwingWindow(
+            titleKey = "preferences",
+            fullWindowContent = true
+        ) {
+            PDETheme {
+                preferences()
+            }
+        }
+    }
+}
