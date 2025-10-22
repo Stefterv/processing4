@@ -43,6 +43,7 @@ val LocalWindow = compositionLocalOf<JFrame> { error("No Window Set") }
 class PDESwingWindow(titleKey: String = "", fullWindowContent: Boolean = false, content: @Composable BoxScope.() -> Unit): JFrame(){
     init{
         val window = this
+        size = java.awt.Dimension(800, 600)
         defaultCloseOperation = DISPOSE_ON_CLOSE
         ComposePanel().apply {
             setContent {
@@ -84,11 +85,6 @@ private fun PDEWindowContent(window: JFrame, titleKey: String, fullWindowContent
         PDETheme {
             val locale = LocalLocale.current
             window.title = locale[titleKey]
-            LaunchedEffect(locale) {
-                window.pack()
-                window.setLocationRelativeTo(null)
-            }
-
             Box(modifier = Modifier.padding(top = if (mac && !fullWindowContent) 22.dp else 0.dp),content = content)
         }
     }

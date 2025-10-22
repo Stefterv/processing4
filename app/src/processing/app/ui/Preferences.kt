@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,9 +32,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 import processing.app.LocalPreferences
@@ -92,7 +99,8 @@ class PDEPreferences {
                             )
 
                         },
-                        modifier = Modifier.defaultMinSize(minWidth = 200.dp)
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 200.dp)
                     ) {
 
                         for (group in sortedGroups) {
@@ -112,7 +120,9 @@ class PDEPreferences {
                         }
                     }
                     Box(modifier = Modifier.padding(top = 42.dp)) {
-                        Column(modifier = Modifier.fillMaxSize()) {
+                        Column(modifier = Modifier
+                            .fillMaxSize()
+                        ) {
                             var query by remember { mutableStateOf("") }
                             val locale = LocalLocale.current
                             LaunchedEffect(query){
@@ -167,7 +177,9 @@ class PDEPreferences {
                             }
 
                             val preferences = visible[selected] ?: emptyList()
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(20.dp)
+                            ) {
                                 items(preferences){ preference ->
                                     preference.showControl()
                                 }
