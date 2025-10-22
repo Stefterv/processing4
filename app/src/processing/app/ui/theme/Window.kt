@@ -9,12 +9,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposePanel
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import com.formdev.flatlaf.util.SystemInfo
+import java.awt.Dimension
 
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -40,27 +42,23 @@ val LocalWindow = compositionLocalOf<JFrame> { error("No Window Set") }
  * @param fullWindowContent If true, the content will extend into the title bar area on macOS.
  * @param content The composable content to be displayed in the window.
  */
-class PDESwingWindow(titleKey: String = "", fullWindowContent: Boolean = false, content: @Composable BoxScope.() -> Unit): JFrame(){
+// TODO: Add support for onClose callback
+// TODO: Window placement
+// TODO: Window sizing constraints
+class PDESwingWindow(
+    titleKey: String = "",
+    fullWindowContent: Boolean = false,
+    content: @Composable BoxScope.() -> Unit
+){
     init{
-        val window = this
-        size = java.awt.Dimension(800, 600)
-        defaultCloseOperation = DISPOSE_ON_CLOSE
-        ComposePanel().apply {
+        ComposeWindow().apply {
+            defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
             setContent {
-                PDEWindowContent(window, titleKey, fullWindowContent, content)
+                PDEWindowContent(this@apply, titleKey, fullWindowContent, content)
             }
-            window.add(this)
+            pack()
+            isVisible = true
         }
-        background = java.awt.Color.white
-        setLocationRelativeTo(null)
-        addKeyListener(object : KeyAdapter() {
-            override fun keyPressed(e: KeyEvent) {
-                if (e.keyCode == KeyEvent.VK_ESCAPE) window.dispose()
-            }
-        })
-        isResizable = true
-        isVisible = true
-        requestFocus()
     }
 }
 
@@ -74,7 +72,12 @@ class PDESwingWindow(titleKey: String = "", fullWindowContent: Boolean = false, 
  * @param content The composable content to be displayed in the window.
  */
 @Composable
-private fun PDEWindowContent(window: JFrame, titleKey: String, fullWindowContent: Boolean = false, content: @Composable BoxScope.() -> Unit){
+private fun PDEWindowContent(
+    window: JFrame,
+    titleKey: String,
+    fullWindowContent: Boolean = false,
+    content: @Composable BoxScope.() -> Unit
+){
     val mac = SystemInfo.isMacOS && SystemInfo.isMacFullWindowContentSupported
     remember {
         window.rootPane.putClientProperty("apple.awt.fullWindowContent", mac && fullWindowContent)
@@ -125,7 +128,12 @@ private fun PDEWindowContent(window: JFrame, titleKey: String, fullWindowContent
  *
  */
 @Composable
-fun PDEComposeWindow(titleKey: String, fullWindowContent: Boolean = false, onClose: () -> Unit = {}, content: @Composable BoxScope.() -> Unit){
+fun PDEComposeWindow(
+    titleKey: String,
+    fullWindowContent: Boolean = false,
+    onClose: () -> Unit = {},
+    content: @Composable BoxScope.() -> Unit
+){
     val windowState = rememberWindowState(
         size = DpSize.Unspecified,
         position = WindowPosition(Alignment.Center)
