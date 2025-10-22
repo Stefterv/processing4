@@ -23,6 +23,12 @@
 
 package processing.app.platform;
 
+import java.awt.*;
+import java.io.File;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import processing.app.Base;
@@ -31,10 +37,6 @@ import processing.app.ui.Toolkit;
 import processing.awt.ShimAWT;
 import processing.core.PApplet;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.io.File;
 
 
 /**
@@ -110,18 +112,29 @@ public class DefaultPlatform {
     // (i.e. Nimbus on Linux) with our custom components is badness.
 
     // dummy font call so that it's registered for FlatLaf
-    Font defaultFont = Toolkit.getSansFont(14, Font.PLAIN);
-    UIManager.put("defaultFont", defaultFont);
+    new Thread(() -> {
+      Font defaultFont = Toolkit.getSansFont(14, Font.PLAIN);
+      UIManager.put("defaultFont", defaultFont);
+    }).start();
+
 
     // pull in FlatLaf.properties from the processing.app.laf folder
     FlatLaf.registerCustomDefaultsSource("processing.app.laf");
 
-    // start with Light, but updateTheme() will be called soon
-    UIManager.setLookAndFeel(new FlatLightLaf());
+    new Thread(() -> {
+      // start with Light, but updateTheme() will be called soon
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (UnsupportedLookAndFeelException e) {
+            throw new RuntimeException(e);
+        }
+    }).start();
 
     // Does not fully remove the gray hairline (probably from a parent
     // Window object), but is an improvement from the heavier default.
-    UIManager.put("ToolTip.border", new EmptyBorder(0, 0, 0, 0));
+    new Thread(() -> {
+      UIManager.put("ToolTip.border", new EmptyBorder(0, 0, 0, 0));
+    }).start();
 
     /*
     javax.swing.UIDefaults defaults = UIManager.getDefaults();
