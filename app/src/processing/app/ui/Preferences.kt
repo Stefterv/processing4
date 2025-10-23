@@ -50,6 +50,7 @@ import processing.app.ui.preferences.Other
 import processing.app.ui.theme.LocalLocale
 import processing.app.ui.theme.PDESwingWindow
 import processing.app.ui.theme.PDETheme
+import java.awt.Dimension
 import javax.swing.SwingUtilities
 
 val LocalPreferenceGroups = compositionLocalOf<MutableMap<PDEPreferenceGroup, List<PDEPreference>>> {
@@ -313,7 +314,8 @@ fun show(){
     SwingUtilities.invokeLater {
         PDESwingWindow(
             titleKey = "preferences",
-            fullWindowContent = true
+            fullWindowContent = true,
+            size = Dimension(800, 600)
         ) {
             PDETheme {
                 preferences()
