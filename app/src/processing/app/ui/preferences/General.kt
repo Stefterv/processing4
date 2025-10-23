@@ -41,7 +41,6 @@ class General {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
                         ) {
                             TextField(
                                 value = preference ?: "",
@@ -66,9 +65,7 @@ class General {
                     descriptionKey = "preferences.sketch_naming",
                     group = general,
                     control = { preference, updatePreference ->
-                        Row(
-                            modifier = Modifier.padding(horizontal = 20.dp)
-                        ) {
+                        Row{
                             for (option in if(Preferences.isInitialized()) SketchName.getOptions() else arrayOf(
                                 "timestamp",
                                 "untitled",
@@ -97,7 +94,6 @@ class General {
                     control = { preference, updatePreference ->
                         Switch(
                             checked = preference.toBoolean(),
-                            modifier = Modifier.padding(horizontal = 20.dp),
                             onCheckedChange = {
                                 updatePreference(it.toString())
                             }
@@ -113,7 +109,6 @@ class General {
                     control = { preference, updatePreference ->
                         Switch(
                             checked = preference.toBoolean(),
-                            modifier = Modifier.padding(horizontal = 20.dp),
                             onCheckedChange = {
                                 updatePreference(it.toString())
                             }

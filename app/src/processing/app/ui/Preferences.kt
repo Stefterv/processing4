@@ -70,6 +70,9 @@ class PDEPreferences {
             Other.register()
         }
 
+        /**
+         * Composable function to display the preferences UI.
+         */
         @OptIn(ExperimentalMaterial3Api::class)
         @Composable
         fun preferences(){
@@ -218,6 +221,23 @@ class PDEPreferences {
     }
 }
 
+/**
+ * Data class representing a single preference in the preferences system.
+ *
+ * Usage:
+ * ```
+ * PDEPreferences.register(
+ *     PDEPreference(
+ *         key = "preference.key",
+ *         descriptionKey = "preference.description",
+ *         group = somePreferenceGroup,
+ *         control = { preference, updatePreference ->
+ *             // Composable UI to modify the preference
+ *         }
+ *     )
+ * )
+ * ```
+ */
 data class PDEPreference(
     /**
      * The key in the preferences file used to store this preference.
@@ -243,6 +263,9 @@ data class PDEPreference(
     val noPadding: Boolean = false,
 )
 
+/**
+ * Composable function to display the preference's description and control.
+ */
 @Composable
 private fun PDEPreference.showControl() {
     val locale = LocalLocale.current
@@ -268,6 +291,9 @@ private fun PDEPreference.showControl() {
 
 }
 
+/**
+ * Data class representing a group of preferences.
+ */
 data class PDEPreferenceGroup(
     /**
      * The name of this group.
