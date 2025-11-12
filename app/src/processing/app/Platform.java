@@ -23,19 +23,21 @@
 
 package processing.app;
 
+import com.sun.jna.platform.FileUtils;
+import processing.app.platform.DefaultPlatform;
+import processing.core.PApplet;
+import processing.core.PConstants;
+import processing.data.StringDict;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
-
-import com.sun.jna.platform.FileUtils;
-
-import processing.app.platform.DefaultPlatform;
-import processing.core.PApplet;
-import processing.core.PConstants;
-import processing.data.StringDict;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class Platform {
@@ -73,6 +75,7 @@ public class Platform {
         nativeBits = 64;
       }
     }
+      init();
   }
 
 
@@ -336,6 +339,8 @@ public class Platform {
   @Deprecated
   static public File getContentFile(String name) {
     if (processingRoot == null) {
+
+        // Get the build in resources location from the Jetpack Compose resources
       var resourcesDir = System.getProperty("compose.application.resources.dir");
       if(resourcesDir != null) {
         var directory = new File(resourcesDir);
@@ -343,7 +348,7 @@ public class Platform {
           return new File(directory, name);
         }
       }
-      // Get the path to the .jar file that contains Base.class
+        // Get the path to the .jar file that contains Base.class
       URL pathURL =
           Base.class.getProtectionDomain().getCodeSource().getLocation();
       // Decode URL
@@ -367,6 +372,15 @@ public class Platform {
         } else if (Platform.isLinux()) {
           processingRoot =  new File(build, "linux/work");
         }
+      } else if (decodedPath.contains("/app/build/classes/java/")) {  // This means we're in IntelliJ
+          final File folder = new File(System.getProperty("user.dir"), "app/build/resources-bundled/common");
+          if (!folder.exists()) {
+              Messages.showError("Resources not yet bundled",
+                      "Could not access a required file:\n" +
+                              "<b>" + name + "</b>\n" +
+                              "You may need to run Processing first", null);
+          }
+          processingRoot = folder;
       } else {
         // The .jar file will be in the lib folder
         File jarFolder = new File(decodedPath).getParentFile();
