@@ -1,9 +1,14 @@
 package processing.app.api
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.toMutableStateList
+import kotlinx.coroutines.*
 import processing.app.Mode
+import processing.app.contrib.ContributionType
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.*
 import kotlin.io.path.isDirectory
+import kotlin.io.path.name
 
 class Mode {
     companion object {
@@ -17,25 +22,41 @@ class Mode {
          * @return A list of sketch folders found in the root directory.
          */
         fun findExampleSketches(
-            mode: Mode
+            mode: Mode,
+            sketchbookFolder: File? = null,
+            scope: CoroutineScope? = null
         ): List<Sketch.Companion.Folder> {
             val baseExamples = mode.exampleCategoryFolders.mapNotNull {
-                searchForSketches(it, mode)
+                searchForSketches(it.toPath(), mode, { true }, scope)
             }
 
             val coreLibraryExamples = mode.coreLibraries.mapNotNull {
-                searchForSketches(it.examplesFolder, mode)
-            }
+                searchForSketches(it.examplesFolder.toPath(), mode, { true }, scope).replace(
+                    name = it.name,
+                    path = it.path
+                )
+            }.wrap(
+                name = "Libraries",
+                path = mode.getContentFile("libraries").toString()
+            )
 
             val contributedLibraryExamples = mode.contribLibraries.mapNotNull {
-                searchForSketches(it.examplesFolder, mode)
+                searchForSketches(it.examplesFolder.toPath(), mode, { true }, scope).replace(
+                    name = it.name,
+                    path = it.path
+                )
+            }.wrap(
+                name = "Contributed Libraries",
+                path = mode.getContentFile("libraries2").toString()
+            )
+
+            val contributedExamplePacks = sketchbookFolder?.let { root ->
+                ContributionType.EXAMPLES.listCandidates(root).mapNotNull {
+                    searchForSketches(it.toPath(), mode, { true }, scope)
+                }
             }
-//            val contributedExamplePacks = Base.getSketchbookExamplesFolder()?.let { root ->
-//                ContributionType.EXAMPLES.listCandidates(root).mapNotNull {
-//                    searchForSketches(it, mode)
-//                }
-//            }
-            return emptyList()
+            return (baseExamples + coreLibraryExamples + contributedLibraryExamples + (contributedExamplePacks
+                ?: emptyList()))
         }
 
         /**
@@ -48,17 +69,18 @@ class Mode {
          * @return A list of sketch folders found in the root directory.
          */
         fun searchForSketches(
-            root: File,
+            root: Path,
             mode: Mode,
-            filter: ((File) -> Boolean) = { true }
+            filter: ((Path) -> Boolean) = { true },
+            scope: CoroutineScope? = null
         ): Sketch.Companion.Folder? {
-            if (!root.isDirectory) return null
+            if (!root.isDirectory()) return null
             if (!filter(root)) return null
 
-            val stream = Files.newDirectoryStream(root.toPath())
+            val stream = Files.newDirectoryStream(root)
             val (sketchFolders, subfolders) = stream
                 .filter { path -> path.isDirectory() }
-                .filter { path -> filter(path.toFile()) }
+                .filter { path -> filter(path) }
                 .partition { path ->
                     val main = processing.app.Sketch.findMain(path.toFile(), listOf(mode))
                     main != null
@@ -69,16 +91,80 @@ class Mode {
                     path = it.toString(),
                     mode = mode.identifier
                 )
-            }
+            }.toMutableStateList()
             val children = subfolders.mapNotNull {
-                searchForSketches(it.toFile(), mode, filter)
-            }
+                searchForSketches(it, mode, filter)
+            }.toMutableStateList()
             if (sketches.isEmpty() && children.isEmpty()) return null
+
+            scope?.launch(Dispatchers.IO) {
+                val watchService: WatchService = FileSystems
+                    .getDefault()
+                    .newWatchService()
+
+                val watcher = root.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY)
+                while (isActive) {
+                    delay(100)
+                    watchService.poll() ?: continue
+
+                    watcher.pollEvents().forEach { _ ->
+                        val updatedFolder = searchForSketches(root, mode, filter) ?: return@forEach
+
+                        sketches.clear()
+                        sketches.addAll(updatedFolder.sketches)
+                        children.clear()
+                        children.addAll(updatedFolder.children)
+                    }
+
+                }
+            }
+
             return Sketch.Companion.Folder(
                 name = root.name,
                 path = root.toString(),
                 sketches = sketches,
                 children = children
+            )
+        }
+
+        fun Sketch.Companion.Folder?.wrap(
+            name: String? = this?.name,
+            path: String? = this?.path
+        ): Sketch.Companion.Folder? {
+            if (this == null) return null;
+            return Sketch.Companion.Folder(
+                name = name ?: this.name,
+                path = path ?: this.path,
+                sketches = mutableStateListOf(),
+                children = mutableStateListOf(this)
+            )
+        }
+
+        fun List<Sketch.Companion.Folder>.wrap(
+            name: String,
+            path: String,
+        ): List<Sketch.Companion.Folder> {
+            if (this.isEmpty()) return emptyList()
+            return listOf(
+                Sketch.Companion.Folder(
+                    name = name,
+                    path = path,
+                    sketches = mutableStateListOf(),
+                    children = this.toMutableStateList()
+                )
+            )
+        }
+
+        fun Sketch.Companion.Folder?.replace(
+            name: String? = this?.name,
+            path: String? = this?.path
+        ): Sketch.Companion.Folder? {
+            if (this == null) return null;
+            return Sketch.Companion.Folder(
+                name = name ?: this.name,
+                path = path ?: this.path,
+                sketches = this.sketches,
+                children = this.children
             )
         }
     }

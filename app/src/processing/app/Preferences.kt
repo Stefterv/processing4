@@ -3,6 +3,7 @@ package processing.app
 import androidx.compose.runtime.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.launch
@@ -82,11 +83,6 @@ const val DEFAULTS_FILE_NAME = "defaults.txt"
 fun PreferencesProvider(content: @Composable () -> Unit){
     val preferencesFileOverride: File? = System.getProperty("processing.app.preferences.file")?.let { File(it) }
     val preferencesDebounceOverride: Long? = System.getProperty("processing.app.preferences.debounce")?.toLongOrNull()
-
-    // Initialize the platform (if not already done) to ensure we have access to the settings folder
-    remember {
-        Platform.init()
-    }
 
     // Grab the preferences file, creating it if it doesn't exist
     // TODO: This functionality should be separated from the `Preferences` class itself
@@ -188,6 +184,7 @@ fun watchFile(file: File): Any? {
                         event = modified
                     }
                 }
+                delay(100)
             }
         }
         onDispose {
