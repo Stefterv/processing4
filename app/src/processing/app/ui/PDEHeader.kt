@@ -2,6 +2,7 @@ package processing.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -66,7 +67,17 @@ fun Header(
                         onSearch = {
 
                         },
-                        trailingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (query.isEmpty()) {
+                                Icon(Icons.Default.Search, contentDescription = null)
+                            } else {
+                                IconButton(
+                                    onClick = { onQueryChange("") }
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = null)
+                                }
+                            }
+                        },
                         expanded = false,
                         onExpandedChange = { },
                         placeholder = { searchPlaceholder() }

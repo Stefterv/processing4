@@ -2,18 +2,23 @@ package processing.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.application
+import kotlinx.coroutines.launch
 import processing.app.Base
 import processing.app.Mode
 import processing.app.Platform
@@ -31,196 +36,327 @@ class PDEExamples {
     companion object {
         @Composable
         fun examples(mode: Mode) {
-            val sketches = remember { mutableStateListOf<Sketch.Companion.Folder>() }
+            /**
+             * Swapping primary and tertiary colors for the preferences window, probably should do that program-wide
+             */
+            val originalScheme = MaterialTheme.colorScheme
+            MaterialTheme(
+                colorScheme = originalScheme.copy(
+                    primary = originalScheme.tertiary,
+                    onPrimary = originalScheme.onTertiary,
+                    primaryContainer = originalScheme.tertiaryContainer,
+                    onPrimaryContainer = originalScheme.onTertiaryContainer,
 
-            var searchQuery by remember { mutableStateOf("") }
+                    tertiary = originalScheme.primary,
+                    onTertiary = originalScheme.onPrimary,
+                    tertiaryContainer = originalScheme.primaryContainer,
+                    onTertiaryContainer = originalScheme.onPrimaryContainer,
+                )
+            ) {
+                val sketches = remember { mutableStateListOf<Sketch.Companion.Folder>() }
 
-            val scope = rememberCoroutineScope()
+                var searchQuery by remember { mutableStateOf("") }
 
-            LaunchedEffect(mode) {
-                val foundSketches =
-                    processing.app.api.Mode.findExampleSketches(
-                        mode = mode,
-                        sketchbookFolder = null,
-                        scope = scope
-                    )
-                sketches.clear()
-                sketches.addAll(foundSketches)
-            }
-            val alphabeticalSketches by derivedStateOf {
-                fun sortFolder(folder: Sketch.Companion.Folder): Sketch.Companion.Folder {
-                    val sortedSketches = folder.sketches.sortedBy { it.name }
-                    val sortedChildren = folder.children.map { child ->
-                        sortFolder(child)
-                    }.sortedBy { it.name }
-                    return Sketch.Companion.Folder(
-                        name = folder.name,
-                        path = folder.path,
-                        sketches = sortedSketches,
-                        children = sortedChildren
-                    )
+                val scope = rememberCoroutineScope()
+
+                LaunchedEffect(mode) {
+                    val foundSketches =
+                        processing.app.api.Mode.findExampleSketches(
+                            mode = mode,
+                            sketchbookFolder = null,
+                            scope = scope
+                        )
+                    sketches.clear()
+                    sketches.addAll(foundSketches)
                 }
-                sketches.map { folder ->
-                    sortFolder(folder)
-                }
-            }
 
-            val querriedSketches by derivedStateOf {
-                if (searchQuery.isBlank()) {
-                    alphabeticalSketches
-                } else {
-                    fun filterFolder(folder: Sketch.Companion.Folder): Sketch.Companion.Folder? {
-                        val filteredSketches = folder.sketches.filter { sketch ->
-                            sketch.name.contains(searchQuery, ignoreCase = true) ||
-                                    sketch.path.contains(searchQuery, ignoreCase = true)
+                val querriedSketches by derivedStateOf {
+                    if (searchQuery.isBlank()) {
+                        sketches
+                    } else {
+                        fun filterFolder(folder: Sketch.Companion.Folder): Sketch.Companion.Folder? {
+                            val filteredSketches = folder.sketches.filter { sketch ->
+                                sketch.name.contains(searchQuery, ignoreCase = true) ||
+                                        sketch.path.contains(searchQuery, ignoreCase = true)
+                            }
+                            val filteredChildren = folder.children.mapNotNull { child ->
+                                filterFolder(child)
+                            }
+                            return if (filteredSketches.isNotEmpty() || filteredChildren.isNotEmpty()) {
+                                Sketch.Companion.Folder(
+                                    name = folder.name,
+                                    path = folder.path,
+                                    sketches = filteredSketches,
+                                    children = filteredChildren
+                                )
+                            } else {
+                                null
+                            }
                         }
-                        val filteredChildren = folder.children.mapNotNull { child ->
-                            filterFolder(child)
-                        }
-                        return if (filteredSketches.isNotEmpty() || filteredChildren.isNotEmpty()) {
-                            Sketch.Companion.Folder(
-                                name = folder.name,
-                                path = folder.path,
-                                sketches = filteredSketches,
-                                children = filteredChildren
-                            )
-                        } else {
-                            null
+
+                        sketches.mapNotNull { folder ->
+                            filterFolder(folder)
                         }
                     }
+                }
 
-                    alphabeticalSketches.mapNotNull { folder ->
-                        filterFolder(folder)
+                val alphabeticalSketches by derivedStateOf {
+                    fun sortFolder(folder: Sketch.Companion.Folder): Sketch.Companion.Folder {
+                        val sortedSketches = folder.sketches.sortedBy { it.name }
+                        val sortedChildren = folder.children.map { child ->
+                            sortFolder(child)
+                        }.sortedBy { it.name }
+                        return Sketch.Companion.Folder(
+                            name = folder.name,
+                            path = folder.path,
+                            sketches = sortedSketches,
+                            children = sortedChildren
+                        )
+                    }
+                    querriedSketches.map { folder ->
+                        sortFolder(folder)
                     }
                 }
-            }
 
-            Column {
-                Header(
-                    searchable = SearchState(
-                        query = searchQuery,
-                        onQueryChange = { searchQuery = it }
-                    ),
-                    headlineKey = "",
-                    headline = {
-                        Text("${mode.getTitle()} Examples")
-                    },
-                    descriptionKey = "examples.description"
-                ) {
-                    Button(
-                        onClick = {},
-                        modifier = Modifier.align(Alignment.CenterVertically)
+
+                /**
+                 * Flatting the structure into a flat list as scrolling to an item can only be done with an index
+                 */
+                data class SketchItem(
+                    val type: String,
+                    val item: Any
+                )
+
+                val flatSketches by derivedStateOf {
+                    alphabeticalSketches.flatMap { group ->
+                        val children = group.children.flatMap { category ->
+                            fun pairs(category: Sketch.Companion.Folder): List<SketchItem> = listOf(
+                                SketchItem(
+                                    "category",
+                                    category
+                                )
+                            ) + category.sketches.map { sketch ->
+                                SketchItem(
+                                    "sketch",
+                                    sketch
+                                )
+                            } + category.children.flatMap { pairs(it) }
+
+                            pairs(category)
+                        }
+                        val itself = SketchItem(
+                            "group",
+                            group
+                        )
+                        listOf(itself) + children
+                    }
+                }
+
+                val finalSketches = flatSketches
+
+                Column {
+                    Header(
+                        searchable = SearchState(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it }
+                        ),
+                        headlineKey = "",
+                        headline = {
+                            Text("${mode.getTitle()} Examples")
+                        },
+                        descriptionKey = "examples.description"
                     ) {
-                        Icon(Icons.Default.Shuffle, contentDescription = null)
-                        Text("Random")
+                        Button(
+                            onClick = {},
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        ) {
+                            Icon(Icons.Default.Shuffle, contentDescription = null)
+                            Text("Random")
+                        }
                     }
-                }
-                HorizontalDivider()
-                Row(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .fillMaxHeight()
-                ) {
-                    /**
-                     * Left navigation column with categories
-                     */
-                    val previewState = rememberLazyGridState()
-
-                    val openGroups = remember { mutableStateSetOf<Sketch.Companion.Folder>() }
-                    val scope = rememberCoroutineScope()
-                    LazyVerticalGrid(
+                    HorizontalDivider()
+                    Row(
                         modifier = Modifier
-                            .width(200.dp),
-                        columns = GridCells.Adaptive(minSize = 100.dp),
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .fillMaxHeight()
                     ) {
-                        sketches.map { group ->
-                            val open = openGroups.contains(group)
-                            item(
-                                span = { GridItemSpan(maxLineSpan) }
-                            ) {
-                                TextButton(onClick = {
-                                    if (!open) {
-                                        openGroups.add(group)
-                                    } else {
-                                        openGroups.remove(group)
-                                    }
-                                }) {
-                                    Icon(
-                                        Icons.Default.ArrowDropDown, contentDescription = null,
-                                        modifier = Modifier
-                                            .rotate(if (open) 0f else -90f)
-                                    )
-                                    Text(group.name)
+                        /**
+                         * Left navigation column with categories
+                         */
+                        val previewState = rememberLazyGridState()
+
+                        val openGroups = remember { mutableStateSetOf<Sketch.Companion.Folder>() }
+                        LaunchedEffect(alphabeticalSketches) {
+                            if (openGroups.isEmpty()) {
+                                alphabeticalSketches.firstOrNull()?.let {
+                                    openGroups.add(it)
                                 }
                             }
-                            if (open) {
-                                group.children.map { category ->
-                                    item {
-                                        Button(
-                                            onClick = {},
-                                            modifier = Modifier.animateItem()
+                        }
+                        val scope = rememberCoroutineScope()
+                        val current by derivedStateOf {
+                            val visibleItems = previewState.layoutInfo.visibleItemsInfo
+                            // Grab the first visible category or sketch to determine the current location
+                            visibleItems.firstNotNullOfOrNull {
+                                val item = finalSketches.getOrNull(it.index) ?: return@firstNotNullOfOrNull null
+                                if (item.type != "category") return@firstNotNullOfOrNull null
+                                val category = item.item as Sketch.Companion.Folder
+                                category.path
+                            } ?: visibleItems.slice(visibleItems.size / 2..<visibleItems.size).firstNotNullOfOrNull {
+                                val item = finalSketches.getOrNull(it.index) ?: return@firstNotNullOfOrNull null
+                                if (item.type != "sketch") return@firstNotNullOfOrNull null
+
+                                val sketch = item.item as Sketch.Companion.Sketch
+                                sketch.path
+                            }
+                        }
+                        val offset = -80
+                        LazyVerticalGrid(
+                            modifier = Modifier
+                                .width(280.dp)
+                                .padding(24.dp),
+                            columns = GridCells.Adaptive(minSize = 80.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            alphabeticalSketches.map { group ->
+                                val isOpen = openGroups.contains(group)
+                                item(
+                                    span = { GridItemSpan(maxLineSpan) }
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            scope.launch {
+                                                val index = finalSketches.indexOfFirst {
+                                                    it.type == "group" && (it.item as Sketch.Companion.Folder).path == group.path
+                                                }
+                                                if (index >= 0) {
+                                                    previewState.animateScrollToItem(index, 0)
+                                                }
+                                            }
+                                        },
+                                        colors = if (current?.startsWith(group.path) == true) ButtonDefaults.buttonColors() else ButtonDefaults.outlinedButtonColors(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(start = 12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(category.name)
+                                            Text(
+                                                text = group.name,
+                                                modifier = Modifier
+                                            )
+                                            IconButton(
+                                                onClick = {
+                                                    if (isOpen) {
+                                                        openGroups.remove(group)
+                                                    } else {
+                                                        openGroups.add(group)
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    if (isOpen) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                                    contentDescription = ""
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                if (isOpen) {
+                                    group.children.map { category ->
+                                        item {
+                                            TextButton(
+                                                onClick = {
+                                                    scope.launch {
+                                                        val index = finalSketches.indexOfFirst {
+                                                            it.type == "category" && (it.item as Sketch.Companion.Folder).path == category.path
+                                                        }
+                                                        if (index >= 0) {
+                                                            previewState.animateScrollToItem(index, offset)
+                                                        }
+                                                    }
+                                                },
+                                                colors = if (current?.startsWith(category.path) == true) ButtonDefaults.buttonColors() else ButtonDefaults.outlinedButtonColors(),
+                                                shape = RoundedCornerShape(12.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp)
+                                            ) {
+                                                Text(
+                                                    text = category.name,
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    /**
-                     * Right content column with examples
-                     */
-                    LazyVerticalGrid(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 24.dp),
-                        columns = GridCells.Adaptive(minSize = 240.dp),
-                        state = previewState,
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    ) {
-                        fun showSketches(group: Sketch.Companion.Folder, crumbs: List<String> = emptyList()) {
-                            if (!group.sketches.isEmpty()) {
-                                item(
-                                    key = "header-${group.path}-${crumbs.size}",
-                                    span = { GridItemSpan(maxLineSpan) }
-                                ) {
-                                    Text(
-                                        text = group.name,
-                                        modifier = Modifier
-                                            .animateItem(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
+                        /**
+                         * Right content column with examples
+                         */
+                        LazyVerticalGrid(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 24.dp),
+                            columns = GridCells.Adaptive(minSize = 240.dp),
+                            contentPadding = PaddingValues(vertical = 24.dp),
+                            state = previewState,
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            finalSketches.map { item ->
+                                when (item.type) {
+                                    "group" -> {
+                                        val group = item.item as Sketch.Companion.Folder
+                                        item(
+                                            span = { GridItemSpan(maxLineSpan) }
+                                        ) {
+                                            Text(
+                                                text = group.name,
+                                                style = MaterialTheme.typography.headlineSmall,
+                                            )
+                                        }
+                                    }
+
+                                    "category" -> {
+                                        val category = item.item as Sketch.Companion.Folder
+                                        item(
+                                            span = { GridItemSpan(maxLineSpan) }
+                                        ) {
+                                            Text(
+                                                text = category.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                            )
+                                        }
+                                    }
+
+                                    "sketch" -> {
+                                        val sketch = item.item as Sketch.Companion.Sketch
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .animateItem(),
+                                            ) {
+                                                sketch.card(onOpen = {})
+                                            }
+                                        }
+                                    }
+
+                                    else -> {
+                                        item {
+                                            Box {
+
+                                            }
+                                        }
+                                    }
                                 }
-                            }
-                            items(group.sketches, key = { it.path }) { sketch ->
-                                Box(
-                                    modifier = Modifier.animateItem()
-                                ) {
-                                    sketch.card(onOpen = {})
-                                }
-                            }
-                            group.children.map { child ->
-                                showSketches(child, crumbs + group.name)
                             }
                         }
 
-                        querriedSketches.map { group ->
-                            stickyHeader(
-                                key = "header-${group.path}"
-                            ) {
-                                Text(
-                                    text = group.name,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                )
-                            }
-                            showSketches(group)
-                        }
                     }
-
                 }
             }
         }
@@ -233,7 +369,8 @@ fun show(mode: Mode) {
         PDESwingWindow(
             unique = mode::class,
             titleKey = "examples",
-            size = Dimension(850, 600),
+            fullWindowContent = true,
+            size = Dimension(1100, 700),
             minSize = Dimension(700, 500),
         ) {
             examples(mode)
@@ -269,7 +406,7 @@ fun main() {
         }
         PDEComposeWindow(
             titleKey = "pde.examples.title",
-            size = DpSize(1000.dp, 750.dp),
+            size = DpSize(1100.dp, 700.dp),
             fullWindowContent = true
         ) {
             PDETheme(darkTheme = false) {
