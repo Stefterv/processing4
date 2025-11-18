@@ -604,7 +604,7 @@ public abstract class Mode {
 
 
   public void showExamplesFrame() {
-      PDEExamplesKt.show(this);
+      PDEExamplesKt.show(this, base);
   }
 
 

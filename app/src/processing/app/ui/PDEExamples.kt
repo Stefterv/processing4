@@ -1,5 +1,7 @@
 package processing.app.ui
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -14,10 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.decodeToImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -39,8 +44,9 @@ import javax.swing.SwingUtilities
 
 class PDEExamples {
     companion object {
+        @OptIn(ExperimentalComposeUiApi::class)
         @Composable
-        fun examples(mode: Mode) {
+        fun examples(mode: Mode, base: Base? = null) {
             /**
              * Swapping primary and tertiary colors for the preferences window, probably should do that program-wide
              */
@@ -193,17 +199,8 @@ class PDEExamples {
                         /**
                          * Left navigation column with categories
                          */
-                        val sidebarState = rememberLazyGridState()
+                        var hovered by remember { mutableStateOf(false) }
                         val previewState = rememberLazyGridState()
-
-                        val openGroups = remember { mutableStateSetOf<Sketch.Companion.Folder>() }
-//                        LaunchedEffect(alphabeticalSketches) {
-//                            if (openGroups.isEmpty()) {
-//                                alphabeticalSketches.firstOrNull()?.let {
-//                                    openGroups.add(it)
-//                                }
-//                            }
-//                        }
                         val scope = rememberCoroutineScope()
                         val current by derivedStateOf {
                             val visibleItems = previewState.layoutInfo.visibleItemsInfo
@@ -221,80 +218,127 @@ class PDEExamples {
                                 sketch.path
                             }
                         }
-                        LazyVerticalGrid(
-                            state = sidebarState,
+                        Column(
                             modifier = Modifier
-                                .width(280.dp)
-                                .padding(24.dp),
-                            columns = GridCells.Fixed(1),
-                            verticalArrangement = Arrangement.spacedBy(0.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                .width(200.dp)
+                                .padding(12.dp)
+                                .fillMaxHeight()
+                                .onPointerEvent(PointerEventType.Enter) {
+                                    hovered = true
+                                }
+                                .onPointerEvent(PointerEventType.Exit) {
+                                    hovered = false
+                                }
                         ) {
                             alphabeticalSketches.map { group ->
                                 val isOpen = current?.startsWith(group.path) == true
-                                stickyHeader {
-                                    TextButton(
-                                        onClick = {
-                                            scope.launch {
-                                                val index = finalSketches.indexOfFirst {
-                                                    it.type == "group" && (it.item as Sketch.Companion.Folder).path == group.path
-                                                }
-                                                if (index >= 0) {
-                                                    previewState.animateScrollToItem(index)
-                                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        scope.launch {
+                                            val index = finalSketches.indexOfFirst {
+                                                it.type == "group" && (it.item as Sketch.Companion.Folder).path == group.path
                                             }
-                                        },
-                                        colors = if (current?.startsWith(group.path) == true) ButtonDefaults.buttonColors() else ButtonDefaults.outlinedButtonColors(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        contentPadding = PaddingValues(start = 12.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = group.name,
-                                                modifier = Modifier
-                                            )
+                                            if (index >= 0) {
+                                                previewState.animateScrollToItem(index)
+                                            }
                                         }
+                                    },
+                                    colors = if (isOpen) ButtonDefaults.buttonColors() else ButtonDefaults.outlinedButtonColors(),
+                                    border = ButtonDefaults.outlinedButtonBorder(!isOpen),
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(start = 12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = group.name,
+                                            modifier = Modifier
+                                        )
                                     }
                                 }
-                                if (isOpen) {
-                                    group.children.map { category ->
-                                        item {
-                                            TextButton(
-                                                onClick = {
-                                                    scope.launch {
-                                                        val index = finalSketches.indexOfFirst {
-                                                            it.type == "category" && (it.item as Sketch.Companion.Folder).path == category.path
-                                                        }
-                                                        if (index >= 0) {
-                                                            previewState.animateScrollToItem(index)
-                                                        }
-                                                    }
-                                                },
-                                                colors = if (current?.startsWith(category.path) == true) ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.surface,
-                                                    contentColor = MaterialTheme.colorScheme.onSurface
 
-                                                ) else ButtonDefaults.outlinedButtonColors(),
-                                                shape = RoundedCornerShape(6.dp),
-                                                contentPadding = PaddingValues(horizontal = 12.dp),
-                                                modifier = Modifier
-                                                    .height(36.dp)
-                                            ) {
-                                                Text(
-                                                    text = category.name,
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                )
-                                            }
+                                val state = rememberLazyGridState()
+                                LaunchedEffect(current) {
+                                    if (!isOpen) return@LaunchedEffect
+                                    val index = group.children.indexOfFirst { category ->
+                                        current?.startsWith(category.path) == true
+                                    }
+                                    val visible = state.layoutInfo.visibleItemsInfo
+                                    if (visible.slice(3..visible.size - 3)
+                                            .any { it.index == index }
+                                    ) return@LaunchedEffect
+                                    if (index >= 0) {
+                                        state.animateScrollToItem(index)
+                                    }
+                                }
+                                val modifier = if (isOpen) {
+                                    Modifier.weight(1f, false)
+                                } else {
+                                    Modifier.height(0.dp)
+                                }
+                                Box(
+                                    modifier = modifier
+                                        .animateContentSize()
+                                ) {
+                                    val alpha by animateFloatAsState(
+                                        targetValue = if (hovered) 1f else 0f
+                                    )
+                                    VerticalScrollbar(
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .alpha(alpha)
+                                            .fillMaxHeight(),
+                                        adapter = rememberScrollbarAdapter(
+                                            scrollState = state,
+                                        )
+                                    )
+                                    LazyVerticalGrid(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 6.dp, end = 12.dp),
+                                        columns = GridCells.Fixed(1),
+                                        state = state,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        group.children.map { category ->
+                                            val isCurrent = current?.startsWith(category.path) == true
+                                            item {
+                                                TextButton(
+                                                    onClick = {
+                                                        scope.launch {
+                                                            val index = finalSketches.indexOfFirst {
+                                                                it.type == "category" && (it.item as Sketch.Companion.Folder).path == category.path
+                                                            }
+                                                            if (index >= 0) {
+                                                                previewState.animateScrollToItem(index)
+                                                            }
+                                                        }
+                                                    },
+                                                    colors = if (isCurrent) ButtonDefaults.buttonColors(
+                                                        containerColor = MaterialTheme.colorScheme.surface,
+                                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                                    ) else ButtonDefaults.outlinedButtonColors(),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                                    modifier = Modifier
+                                                        .height(36.dp)
+                                                ) {
+                                                    Text(
+                                                        text = category.name,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                        }
                         /**
                          * Right content column with examples
                          */
@@ -317,6 +361,7 @@ class PDEExamples {
                                         "group" -> {
                                             val group = item.item as Sketch.Companion.Folder
                                             item(
+                                                key = "group-${group.path}",
                                                 span = { GridItemSpan(maxLineSpan) }
                                             ) {
                                                 Text(
@@ -329,6 +374,7 @@ class PDEExamples {
                                         "category" -> {
                                             val category = item.item as Sketch.Companion.Folder
                                             item(
+                                                key = "category-${category.path}",
                                                 span = { GridItemSpan(maxLineSpan) }
                                             ) {
                                                 Text(
@@ -340,7 +386,9 @@ class PDEExamples {
 
                                         "sketch" -> {
                                             val sketch = item.item as Sketch.Companion.Sketch
-                                            item {
+                                            item(
+                                                key = "sketch-${sketch.path}"
+                                            ) {
                                                 Box(
                                                     modifier = Modifier
                                                         .animateItem(),
@@ -377,7 +425,7 @@ class PDEExamples {
 }
 
 
-fun show(mode: Mode) {
+fun show(mode: Mode, base: Base?) {
     SwingUtilities.invokeLater {
         PDESwingWindow(
             unique = mode::class,
@@ -386,7 +434,7 @@ fun show(mode: Mode) {
             size = Dimension(1100, 700),
             minSize = Dimension(700, 500),
         ) {
-            examples(mode)
+            examples(mode, base)
         }
     }
 }
@@ -409,7 +457,7 @@ fun Sketch.Companion.Sketch.exampleCard(onOpen: () -> Unit = {}) {
                     shape = MaterialTheme.shapes.medium
                 )
                 .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.surfaceContainerLowest,
                     shape = MaterialTheme.shapes.medium
                 )
                 .clip(MaterialTheme.shapes.medium)
@@ -425,7 +473,7 @@ fun Sketch.Companion.Sketch.exampleCard(onOpen: () -> Unit = {}) {
                     modifier = Modifier
                         .size(75.dp)
                         .align(Alignment.Center),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     contentDescription = "Processing Logo"
                 )
                 HorizontalDivider()

@@ -37,7 +37,7 @@ class Mode {
                 )
             }.wrap(
                 name = "Libraries",
-                path = mode.getContentFile("libraries").toString()
+                path = File(mode.coreLibraries.first().path).parent.toString()
             )
 
             val contributedLibraryExamples = mode.contribLibraries.mapNotNull {
@@ -47,7 +47,7 @@ class Mode {
                 )
             }.wrap(
                 name = "Contributed Libraries",
-                path = mode.getContentFile("libraries2").toString()
+                path = File(mode.contribLibraries.firstOrNull()?.path ?: mode.getContentFile("").path).parent.toString()
             )
 
             val contributedExamplePacks = sketchbookFolder?.let { root ->
