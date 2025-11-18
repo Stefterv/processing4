@@ -1,6 +1,6 @@
 package processing.app.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -8,13 +8,17 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.decodeToImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.application
@@ -24,6 +28,7 @@ import processing.app.Mode
 import processing.app.Platform
 import processing.app.api.Sketch
 import processing.app.ui.PDEExamples.Companion.examples
+import processing.app.ui.theme.LocalLocale
 import processing.app.ui.theme.PDEComposeWindow
 import processing.app.ui.theme.PDESwingWindow
 import processing.app.ui.theme.PDETheme
@@ -148,7 +153,12 @@ class PDEExamples {
                             "group",
                             group
                         )
-                        listOf(itself) + children
+                        listOf(itself) + group.sketches.map { sketch ->
+                            SketchItem(
+                                "sketch",
+                                sketch
+                            )
+                        } + children
                     }
                 }
 
@@ -183,16 +193,17 @@ class PDEExamples {
                         /**
                          * Left navigation column with categories
                          */
+                        val sidebarState = rememberLazyGridState()
                         val previewState = rememberLazyGridState()
 
                         val openGroups = remember { mutableStateSetOf<Sketch.Companion.Folder>() }
-                        LaunchedEffect(alphabeticalSketches) {
-                            if (openGroups.isEmpty()) {
-                                alphabeticalSketches.firstOrNull()?.let {
-                                    openGroups.add(it)
-                                }
-                            }
-                        }
+//                        LaunchedEffect(alphabeticalSketches) {
+//                            if (openGroups.isEmpty()) {
+//                                alphabeticalSketches.firstOrNull()?.let {
+//                                    openGroups.add(it)
+//                                }
+//                            }
+//                        }
                         val scope = rememberCoroutineScope()
                         val current by derivedStateOf {
                             val visibleItems = previewState.layoutInfo.visibleItemsInfo
@@ -210,20 +221,18 @@ class PDEExamples {
                                 sketch.path
                             }
                         }
-                        val offset = -80
                         LazyVerticalGrid(
+                            state = sidebarState,
                             modifier = Modifier
                                 .width(280.dp)
                                 .padding(24.dp),
-                            columns = GridCells.Adaptive(minSize = 80.dp),
+                            columns = GridCells.Fixed(1),
                             verticalArrangement = Arrangement.spacedBy(0.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             alphabeticalSketches.map { group ->
-                                val isOpen = openGroups.contains(group)
-                                item(
-                                    span = { GridItemSpan(maxLineSpan) }
-                                ) {
+                                val isOpen = current?.startsWith(group.path) == true
+                                stickyHeader {
                                     TextButton(
                                         onClick = {
                                             scope.launch {
@@ -231,7 +240,7 @@ class PDEExamples {
                                                     it.type == "group" && (it.item as Sketch.Companion.Folder).path == group.path
                                                 }
                                                 if (index >= 0) {
-                                                    previewState.animateScrollToItem(index, 0)
+                                                    previewState.animateScrollToItem(index)
                                                 }
                                             }
                                         },
@@ -248,20 +257,6 @@ class PDEExamples {
                                                 text = group.name,
                                                 modifier = Modifier
                                             )
-                                            IconButton(
-                                                onClick = {
-                                                    if (isOpen) {
-                                                        openGroups.remove(group)
-                                                    } else {
-                                                        openGroups.add(group)
-                                                    }
-                                                }
-                                            ) {
-                                                Icon(
-                                                    if (isOpen) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                                    contentDescription = ""
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -275,13 +270,19 @@ class PDEExamples {
                                                             it.type == "category" && (it.item as Sketch.Companion.Folder).path == category.path
                                                         }
                                                         if (index >= 0) {
-                                                            previewState.animateScrollToItem(index, offset)
+                                                            previewState.animateScrollToItem(index)
                                                         }
                                                     }
                                                 },
-                                                colors = if (current?.startsWith(category.path) == true) ButtonDefaults.buttonColors() else ButtonDefaults.outlinedButtonColors(),
-                                                shape = RoundedCornerShape(12.dp),
-                                                contentPadding = PaddingValues(horizontal = 12.dp)
+                                                colors = if (current?.startsWith(category.path) == true) ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.surface,
+                                                    contentColor = MaterialTheme.colorScheme.onSurface
+
+                                                ) else ButtonDefaults.outlinedButtonColors(),
+                                                shape = RoundedCornerShape(6.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                                modifier = Modifier
+                                                    .height(36.dp)
                                             ) {
                                                 Text(
                                                     text = category.name,
@@ -289,73 +290,85 @@ class PDEExamples {
                                                     style = MaterialTheme.typography.labelMedium,
                                                 )
                                             }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
                         /**
                          * Right content column with examples
                          */
-                        LazyVerticalGrid(
+                        Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(end = 24.dp),
-                            columns = GridCells.Adaptive(minSize = 240.dp),
-                            contentPadding = PaddingValues(vertical = 24.dp),
-                            state = previewState,
-                            verticalArrangement = Arrangement.spacedBy(24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
-                            finalSketches.map { item ->
-                                when (item.type) {
-                                    "group" -> {
-                                        val group = item.item as Sketch.Companion.Folder
-                                        item(
-                                            span = { GridItemSpan(maxLineSpan) }
-                                        ) {
-                                            Text(
-                                                text = group.name,
-                                                style = MaterialTheme.typography.headlineSmall,
-                                            )
-                                        }
-                                    }
-
-                                    "category" -> {
-                                        val category = item.item as Sketch.Companion.Folder
-                                        item(
-                                            span = { GridItemSpan(maxLineSpan) }
-                                        ) {
-                                            Text(
-                                                text = category.name,
-                                                style = MaterialTheme.typography.titleMedium,
-                                            )
-                                        }
-                                    }
-
-                                    "sketch" -> {
-                                        val sketch = item.item as Sketch.Companion.Sketch
-                                        item {
-                                            Box(
-                                                modifier = Modifier
-                                                    .animateItem(),
+                            LazyVerticalGrid(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(end = 24.dp),
+                                columns = GridCells.Adaptive(minSize = 240.dp),
+                                contentPadding = PaddingValues(vertical = 24.dp),
+                                state = previewState,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                finalSketches.map { item ->
+                                    when (item.type) {
+                                        "group" -> {
+                                            val group = item.item as Sketch.Companion.Folder
+                                            item(
+                                                span = { GridItemSpan(maxLineSpan) }
                                             ) {
-                                                sketch.card(onOpen = {})
+                                                Text(
+                                                    text = group.name,
+                                                    style = MaterialTheme.typography.headlineSmall,
+                                                )
                                             }
                                         }
-                                    }
 
-                                    else -> {
-                                        item {
-                                            Box {
+                                        "category" -> {
+                                            val category = item.item as Sketch.Companion.Folder
+                                            item(
+                                                span = { GridItemSpan(maxLineSpan) }
+                                            ) {
+                                                Text(
+                                                    text = category.name,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                )
+                                            }
+                                        }
 
+                                        "sketch" -> {
+                                            val sketch = item.item as Sketch.Companion.Sketch
+                                            item {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .animateItem(),
+                                                ) {
+                                                    sketch.exampleCard(onOpen = {})
+                                                }
+                                            }
+                                        }
+
+                                        else -> {
+                                            item {
+                                                Box {
+
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                            VerticalScrollbar(
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .fillMaxHeight(),
+                                adapter = rememberScrollbarAdapter(
+                                    scrollState = previewState,
+                                )
+                            )
                         }
-
                     }
                 }
             }
@@ -375,6 +388,61 @@ fun show(mode: Mode) {
         ) {
             examples(mode)
         }
+    }
+}
+
+
+@Composable
+@OptIn(ExperimentalComposeUiApi::class)
+fun Sketch.Companion.Sketch.exampleCard(onOpen: () -> Unit = {}) {
+    val locale = LocalLocale.current
+    Column(
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onOpen)
+            .padding(12.dp)
+    ) {
+        Box(
+            Modifier
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    shape = MaterialTheme.shapes.medium
+                )
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    shape = MaterialTheme.shapes.medium
+                )
+                .clip(MaterialTheme.shapes.medium)
+                .fillMaxSize()
+                .aspectRatio(16 / 9f)
+        ) {
+            val image = remember {
+                File(path, "${name}.png").takeIf { it.exists() }
+            }
+            if (image == null) {
+                Icon(
+                    painter = painterResource("logo.svg"),
+                    modifier = Modifier
+                        .size(75.dp)
+                        .align(Alignment.Center),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    contentDescription = "Processing Logo"
+                )
+                HorizontalDivider()
+            } else {
+                val imageBitmap: ImageBitmap = remember(image) {
+                    image.inputStream().readAllBytes().decodeToImageBitmap()
+                }
+                Image(
+                    painter = BitmapPainter(imageBitmap),
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentDescription = name
+                )
+            }
+
+        }
+        Text(name)
     }
 }
 
