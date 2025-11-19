@@ -77,7 +77,7 @@ public class Base {
   /**
    * is Processing being run from the command line (true) or from the GUI (false)?
    */
-  static private boolean commandLine;
+  static private boolean commandLine = System.getProperty("java.awt.headless", "false").equals("true");
 
   /**
    * If settings.txt is present inside lib, it will be used to override
@@ -273,7 +273,9 @@ public class Base {
   }
 
   private static void setLookAndFeel() {
-        try {
+      if (Base.isCommandLine()) return;
+
+      try {
             // Use native popups to avoid looking crappy on macOS
             JPopupMenu.setDefaultLightWeightPopupEnabled(false);
 
@@ -469,6 +471,7 @@ public class Base {
 
 
   public static void setCommandLine() {
+      System.setProperty("java.awt.headless", "true");
     commandLine = true;
   }
 
@@ -2209,8 +2212,12 @@ public class Base {
   static public File getSettingsFolder() {
     File settingsFolder = null;
 
-    try {
-      settingsFolder = Platform.getSettingsFolder();
+      try {
+          settingsFolder = Platform.getSettingsFolder();
+          var settingsOverride = System.getProperty("processing.settings.folder");
+          if (settingsOverride != null && !settingsOverride.isEmpty()) {
+              settingsFolder = new File(settingsOverride);
+          }
 
       // create the folder if it doesn't exist already
       if (!settingsFolder.exists()) {
@@ -2256,18 +2263,23 @@ public class Base {
     // If a value is at least set, first check to see if the folder exists.
     // If it doesn't, warn the user that the sketchbook folder is being reset.
     String sketchbookPath = Preferences.getSketchbookPath();
-    if (sketchbookPath != null) {
-      sketchbookFolder = new File(sketchbookPath);
-      if (!sketchbookFolder.exists()) {
-        Messages.showWarning("Sketchbook folder disappeared","""
-            The sketchbook folder no longer exists.
-            Processing will switch to the default sketchbook
-            location, and create a new sketchbook folder if
-            necessary. Processing will then stop talking
-            about itself in the third person.""", null);
-        sketchbookFolder = null;
+      var sketchbookFolderOverride = System.getProperty("processing.sketchbook.folder");
+      if (sketchbookFolderOverride != null && !sketchbookFolderOverride.isEmpty()) {
+          sketchbookPath = sketchbookFolderOverride;
       }
-    }
+
+      if (sketchbookPath != null) {
+          sketchbookFolder = new File(sketchbookPath);
+          if (!sketchbookFolder.exists()) {
+              Messages.showWarning("Sketchbook folder disappeared", """
+                      The sketchbook folder no longer exists.
+                      Processing will switch to the default sketchbook
+                      location, and create a new sketchbook folder if
+                      necessary. Processing will then stop talking
+                      about itself in the third person.""", null);
+              sketchbookFolder = null;
+          }
+      }
 
     // If no path is set, get the default sketchbook folder for this platform
     if (sketchbookFolder == null) {

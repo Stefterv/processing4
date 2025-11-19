@@ -339,7 +339,10 @@ public class Platform {
   @Deprecated
   static public File getContentFile(String name) {
     if (processingRoot == null) {
-
+        var resourcesDirOverride = System.getProperty("processing.resources.folder");
+        if (resourcesDirOverride != null && !resourcesDirOverride.isEmpty() && new File(resourcesDirOverride).exists()) {
+            return new File(resourcesDirOverride, name);
+        }
         // Get the build in resources location from the Jetpack Compose resources
       var resourcesDir = System.getProperty("compose.application.resources.dir");
       if(resourcesDir != null) {
