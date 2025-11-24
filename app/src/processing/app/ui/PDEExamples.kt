@@ -183,7 +183,23 @@ class PDEExamples {
                         descriptionKey = "examples.description"
                     ) {
                         Button(
-                            onClick = {},
+                            onClick = {
+                                querriedSketches
+                                    .flatMap { group ->
+                                        group.children.flatMap { category ->
+                                            fun allSketches(category: Sketch.Companion.Folder): List<Sketch.Companion.Sketch> {
+                                                return category.sketches + category.children.flatMap {
+                                                    allSketches(it)
+                                                }
+                                            }
+                                            allSketches(category)
+                                        }
+                                    }
+                                    .shuffled()
+                                    .firstOrNull()?.let { sketch ->
+                                        base?.handleOpen("${sketch.path}/${sketch.name}.${mode.defaultExtension}")
+                                    }
+                            },
                             modifier = Modifier.align(Alignment.CenterVertically)
                         ) {
                             Icon(Icons.Default.Shuffle, contentDescription = null)
@@ -393,7 +409,9 @@ class PDEExamples {
                                                     modifier = Modifier
                                                         .animateItem(),
                                                 ) {
-                                                    sketch.exampleCard(onOpen = {})
+                                                    sketch.exampleCard(onOpen = {
+                                                        base?.handleOpen("${sketch.path}/${sketch.name}.${mode.defaultExtension}")
+                                                    })
                                                 }
                                             }
                                         }
