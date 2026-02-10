@@ -13,7 +13,6 @@ import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
 import java.io.File
 import java.net.Socket
-import java.util.Properties
 import javax.inject.Inject
 
 class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFactory) : Plugin<Project> {
@@ -31,6 +30,7 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
         // TODO: Setup sketchbook when using as a standalone plugin, use the Java Preferences
         val sketchbook = project.findProperty("processing.sketchbook") as String?
         val settings = project.findProperty("processing.settings") as String?
+        val root = project.findProperty("processing.root") as String?
 
         // Apply the Java plugin to the Project, equivalent of
         // plugins {
@@ -148,34 +148,43 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
                 .filterKeys { it.startsWith("processing") }
                 .forEach { (key, value) -> task.systemProperty(key, value) }
 
+            // Connect the stdio to the PDE if ports are specified
             if(logPort != null) task.standardOutput =  Socket("localhost", logPort.toInt()).outputStream
             if(errPort != null) task.errorOutput = Socket("localhost", errPort.toInt()).outputStream
 
         }
 
+        // For every Java Source Set (main, test, etc) add a PDE source set that includes .pde files
+        // and a task to process them before compilation
         project.extensions.getByType(JavaPluginExtension::class.java).sourceSets.first().let{ sourceSet ->
             val pdeSourceSet = objectFactory.newInstance(
                 DefaultPDESourceDirectorySet::class.java,
                 objectFactory.sourceDirectorySet("${sourceSet.name}.pde", "${sourceSet.name} Processing Source")
-            ).apply {
-                filter.include("**/*.pde")
-                filter.exclude("${project.layout.buildDirectory.asFile.get().name}/**")
+            )
 
+            // Configure the PDE source set to include all .pde files in the sketch folder except those in the build directory
+            pdeSourceSet.apply {
                 srcDir("./")
                 srcDir("$workingDir/unsaved")
+
+                filter.include("**/*.pde")
+                filter.exclude("${project.layout.buildDirectory.asFile.get().name}/**")
             }
             sourceSet.allSource.source(pdeSourceSet)
+
+            // Add top level java source files
             sourceSet.java.srcDir(project.layout.projectDirectory).apply {
                 include("/*.java")
             }
 
+            // Scan the libraries before compiling the sketches
             val librariesTaskName = sourceSet.getTaskName("scanLibraries", "PDE")
             val librariesScan = project.tasks.register(librariesTaskName, LibrariesTask::class.java) { task ->
                 task.description = "Scans the libraries in the sketchbook"
-                task.librariesDirectory.set(sketchbook?.let { File(it, "libraries") })
-                // TODO: Save the libraries metadata to settings folder to share between sketches
+                task.libraryDirectories.from(sketchbook?.let { File(it, "libraries") }, root?.let { File(it).resolve("modes/java/libraries") })
             }
 
+            // Create a task to process the .pde files before compiling the java sources
             val pdeTaskName = sourceSet.getTaskName("preprocess", "PDE")
             val pdeTask = project.tasks.register(pdeTaskName, PDETask::class.java) { task ->
                 task.description = "Processes the ${sourceSet.name} PDE"
@@ -188,12 +197,12 @@ class ProcessingPlugin @Inject constructor(private val objectFactory: ObjectFact
 
             val depsTaskName = sourceSet.getTaskName("addLegacyDependencies", "PDE")
             project.tasks.register(depsTaskName, DependenciesTask::class.java){ task ->
-                task.librariesMetaData
+                // Link the output of the libraries task to the dependencies task
+                task.librariesMetaData.set(librariesScan.get().librariesMetaData)
                 task.dependsOn(pdeTask, librariesScan)
-                // TODO: Save the libraries metadata to settings folder to share between sketches
             }
 
-            // Make sure that the PDE task runs before the java compilation task
+            // Make sure that the PDE tasks runs before the java compilation task
             project.tasks.named(sourceSet.compileJavaTaskName) { task ->
                 task.dependsOn(pdeTaskName, depsTaskName)
             }

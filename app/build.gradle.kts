@@ -1,5 +1,4 @@
 import org.gradle.internal.jvm.Jvm
-import org.gradle.kotlin.dsl.support.zipTo
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import org.jetbrains.compose.ExperimentalComposeLibrary
@@ -18,6 +17,7 @@ plugins{
 
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
+
     alias(libs.plugins.serialization)
     alias(libs.plugins.download)
 }
@@ -37,7 +37,7 @@ sourceSets{
             srcDirs("src")
         }
         resources{
-            srcDirs("resources", listOf("languages", "fonts", "theme").map { "../build/shared/lib/$it" })
+            srcDirs("resources", listOf("fonts", "theme").map { "../build/shared/lib/$it" })
         }
     }
     test{
@@ -51,23 +51,27 @@ compose.desktop {
     application {
         mainClass = "processing.app.ProcessingKt"
 
-
-        val variables = mapOf(
-            "processing.group" to (rootProject.group.takeIf { it != "" } ?: "processing"),
-            "processing.version" to rootProject.version,
-            "processing.revision" to (findProperty("revision") ?: Int.MAX_VALUE),
-            "processing.contributions.source" to "https://contributions.processing.org/contribs",
-            "processing.download.page" to "https://processing.org/download/",
-            "processing.download.latest" to "https://processing.org/download/latest.txt",
-            "processing.tutorials" to "https://processing.org/tutorials/"
-        )
-
-        jvmArgs(*variables.entries.map { "-D${it.key}=${it.value}" }.toTypedArray())
+        jvmArgs(*listOf(
+            Pair("processing.version", rootProject.version),
+            Pair("processing.revision", findProperty("revision") ?: Int.MAX_VALUE),
+            Pair("processing.contributions.source", "https://contributions.processing.org/contribs"),
+            Pair("processing.download.page", "https://processing.org/download/"),
+            Pair("processing.download.latest", "https://processing.org/download/latest.txt"),
+            Pair("processing.tutorials", "https://processing.org/tutorials/"),
+        ).map { "-D${it.first}=${it.second}" }.toTypedArray())
 
         nativeDistributions{
-            modules("jdk.jdi", "java.compiler", "jdk.accessibility", "java.management.rmi", "java.scripting", "jdk.httpserver")
+            modules("jdk.jdi", "java.compiler", "jdk.accessibility", "jdk.zipfs", "java.management.rmi", "java.scripting", "jdk.httpserver")
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Processing"
+
+
+
+
+            fileAssociation("application/x-processing","pde", "Processing Source Code",rootProject.file("build/shared/lib/icons/pde-512.png"), rootProject.file("build/windows/pde.ico"), rootProject.file("build/macos/pde.icns"))
+            fileAssociation("application/x-processing","pyde", "Processing Python Source Code",rootProject.file("build/shared/lib/icons/pde-512.png"), rootProject.file("build/windows/pde.ico"), rootProject.file("build/macos/pde.icns"))
+            fileAssociation("application/x-processing","pdez", "Processing Sketch Bundle",rootProject.file("build/shared/lib/icons/pde-512.png"), rootProject.file("build/windows/pdze.ico"), rootProject.file("build/macos/pdez.icns"))
+            fileAssociation("application/x-processing","pdex", "Processing Contribution Bundle", rootProject.file("build/shared/lib/icons/pde-512.png"), rootProject.file("build/windows/pdex.ico"), rootProject.file("build/macos/pdex.icns"))
 
             macOS{
                 bundleID = "${rootProject.group}.app"
@@ -86,16 +90,13 @@ compose.desktop {
                 upgradeUuid = "89d8d7fe-5602-4b12-ba10-0fe78efbd602"
             }
             linux {
-                appCategory = "Programming"
+                debMaintainer = "hello@processing.org"
                 menuGroup = "Development;Programming;"
+                appCategory = "Programming"
                 iconFile = rootProject.file("build/linux/processing.png")
                 // Fix fonts on some Linux distributions
                 jvmArgs("-Dawt.useSystemAAFontSettings=on")
 
-                fileAssociation("pde", "Processing Source Code", "application/x-processing")
-                fileAssociation("pyde", "Processing Python Source Code", "application/x-processing")
-                fileAssociation("pdez", "Processing Sketch Bundle", "application/x-processing")
-                fileAssociation("pdex", "Processing Contribution Bundle", "application/x-processing")
             }
         }
     }
@@ -113,13 +114,13 @@ dependencies {
 
     implementation(compose.runtime)
     implementation(compose.foundation)
-    implementation(compose.material)
     implementation(compose.ui)
     implementation(compose.components.resources)
     implementation(compose.components.uiToolingPreview)
     implementation(compose.materialIconsExtended)
 
     implementation(compose.desktop.currentOs)
+    implementation(libs.material3)
 
     implementation(libs.compottie)
     implementation(libs.kaml)
@@ -129,6 +130,11 @@ dependencies {
     implementation(libs.clikt)
     implementation(libs.kotlinxSerializationJson)
 
+    implementation(libs.clikt)
+    implementation(libs.kotlinxSerializationJson)
+
+    @OptIn(ExperimentalComposeLibrary::class)
+    testImplementation(compose.uiTest)
     testImplementation(kotlin("test"))
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.junitJupiter)
@@ -167,6 +173,12 @@ tasks.register("lsp-develop"){
 }
 
 val version = if(project.version == "unspecified") "1.0.0" else project.version
+val distributable = { tasks.named<AbstractJPackageTask>("createDistributable").get() }
+val arch = when (System.getProperty("os.arch")) {
+    "amd64", "x86_64" -> "amd64"
+    "aarch64" -> "arm64"
+    else -> System.getProperty("os.arch")
+}
 
 tasks.register<Exec>("installCreateDmg") {
     onlyIf { OperatingSystem.current().isMacOsX }
@@ -176,11 +188,10 @@ tasks.register<Exec>("packageCustomDmg"){
     onlyIf { OperatingSystem.current().isMacOsX }
     group = "compose desktop"
 
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    dependsOn(distributable, "installCreateDmg")
+    dependsOn(distributable(), "installCreateDmg")
 
-    val packageName = distributable.packageName.get()
-    val dir = distributable.destinationDir.get()
+    val packageName = distributable().packageName.get()
+    val dir = distributable().destinationDir.get()
     val dmg = dir.file("../dmg/$packageName-$version.dmg").asFile
     val app = dir.file("$packageName.app").asFile
 
@@ -235,64 +246,123 @@ tasks.register<Exec>("packageCustomMsi"){
     )
 }
 
-
 tasks.register("generateSnapConfiguration"){
-    onlyIf { OperatingSystem.current().isLinux }
-
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    dependsOn(distributable)
-
     val name = findProperty("snapname") as String? ?: rootProject.name
-    val arch = when (System.getProperty("os.arch")) {
-        "amd64", "x86_64" -> "amd64"
-        "aarch64" -> "arm64"
-        else -> System.getProperty("os.arch")
-    }
-    val confinement = findProperty("snapconfinement") as String? ?: "strict"
-    val dir = distributable.destinationDir.get()
-    val base = layout.projectDirectory.file("linux/snapcraft.base.yml")
+    val confinement = (findProperty("snapconfinement") as String?).takeIf { !it.isNullOrBlank() } ?: "strict"
+    val dir = distributable().destinationDir.get()
+    val base = layout.projectDirectory.file("linux/snapcraft.yml")
 
     doFirst {
-
-        var content = base
-            .asFile
-            .readText()
-            .replace("\$name", name)
-            .replace("\$arch", arch)
-            .replace("\$version", version as String)
-            .replace("\$confinement", confinement)
-            .let {
-                if (confinement != "classic") return@let it
-                // If confinement is not strict, remove the PLUGS section
-                val start = it.indexOf("# PLUGS START")
-                val end = it.indexOf("# PLUGS END")
-                if (start != -1 && end != -1) {
-                    val before = it.substring(0, start)
-                    val after = it.substring(end + "# PLUGS END".length)
-                    return@let before + after
-                }
-                return@let it
-            }
-        dir.file("../snapcraft.yaml").asFile.writeText(content)
+        replaceVariablesInFile(
+            base,
+            dir.file("../snapcraft.yaml"),
+            mapOf(
+                "name" to name,
+                "arch" to arch,
+                "version" to version as String,
+                "confinement" to confinement,
+                "deb" to "deb/${rootProject.name}_${version}-1_${arch}.deb"
+            ),
+            if (confinement == "classic") listOf("PLUGS") else emptyList()
+        )
     }
+}
+tasks.register("generateFlatpakConfiguration"){
+    val identifier = findProperty("flathubidentifier") as String? ?: "org.processing.pde"
+
+    val dir = distributable().destinationDir.get()
+    val base = layout.projectDirectory.file("linux/flathub.yml")
+
+    doFirst {
+        replaceVariablesInFile(
+            base,
+            dir.file("../flatpak/$identifier.yml"),
+            mapOf(
+                "identifier" to identifier,
+                "deb" to dir.file("../deb/${rootProject.name}_${version}-1_${arch}.deb").asFile.absolutePath
+            ),
+            emptyList()
+        )
+    }
+}
+
+fun replaceVariablesInFile(
+    source: RegularFile,
+    target: RegularFile,
+    variables: Map<String, String>,
+    sections: List<String>
+){
+    var content = source.asFile.readText()
+    for ((key, value) in variables) {
+        content = content.replace("\$$key", value)
+    }
+    if (sections.isNotEmpty()) {
+        for (section in sections) {
+            val start = content.indexOf("# $section START")
+            val end = content.indexOf("# $section END")
+            if (start != -1 && end != -1) {
+                val before = content.substring(0, start)
+                val after = content.substring(end + "# $section END".length)
+                content = before + after
+            }
+        }
+    }
+    target.asFile.parentFile.mkdirs()
+    target.asFile.writeText(content)
 }
 
 tasks.register<Exec>("packageSnap"){
     onlyIf { OperatingSystem.current().isLinux }
-    dependsOn("packageDeb", "generateSnapConfiguration")
+    dependsOn("generateSnapConfiguration")
     group = "compose desktop"
 
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    workingDir = distributable.destinationDir.dir("../").get().asFile
+    workingDir = distributable().destinationDir.dir("../").get().asFile
     commandLine("snapcraft")
+}
+
+tasks.register<Exec>("buildFlatpak"){
+    onlyIf { OperatingSystem.current().isLinux }
+    dependsOn("generateFlatpakConfiguration")
+    group = "compose desktop"
+
+    val dir = distributable().destinationDir.get()
+    val identifier = findProperty("flathubidentifier") as String? ?: "org.processing.pde"
+
+    workingDir = dir.file("../flatpak").asFile
+    commandLine(
+        "flatpak-builder",
+        "--install-deps-from=https://flathub.org/repo/flathub.flatpakrepo",
+        "--user",
+        "--force-clean",
+        "--repo=repo",
+        "output",
+        "$identifier.yml"
+    )
+}
+
+tasks.register<Exec>("packageFlatpak"){
+    onlyIf { OperatingSystem.current().isLinux }
+    dependsOn("buildFlatpak")
+    group = "compose desktop"
+
+    val dir = distributable().destinationDir.get()
+    val identifier = findProperty("flathubidentifier") as String? ?: "org.processing.pde"
+
+    workingDir = dir.file("../flatpak").asFile
+    commandLine(
+        "flatpak",
+        "build-bundle",
+        "./repo",
+        "$identifier.flatpak",
+        identifier
+    )
 }
 tasks.register<Zip>("zipDistributable"){
     dependsOn("createDistributable", "setExecutablePermissions")
     group = "compose desktop"
 
-    val distributable = tasks.named<AbstractJPackageTask>("createDistributable").get()
-    val dir = distributable.destinationDir.get()
-    val packageName = distributable.packageName.get()
+    val dir = distributable().destinationDir.get()
+    val packageName = distributable().packageName.get()
 
     from(dir){ eachFile{ permissions{ unix("755") } } }
     archiveBaseName.set(packageName)
@@ -318,7 +388,7 @@ afterEvaluate{
         ){
             dependsOn("notarizeDmg")
         }
-        dependsOn("packageSnap", "zipDistributable")
+        dependsOn("zipDistributable")
     }
 }
 
@@ -343,6 +413,7 @@ tasks.register<Copy>("includeJavaMode") {
     from(java.configurations.runtimeClasspath)
     into(composeResources("modes/java/mode"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    dirPermissions { unix("rwx------") }
 }
 tasks.register<Copy>("includeJdk") {
     from(Jvm.current().javaHome.absolutePath)
@@ -397,6 +468,23 @@ tasks.register<Copy>("includeJavaModeResources") {
     from(java.layout.buildDirectory.dir("resources-bundled"))
     into(composeResources("../"))
 }
+// TODO: Move to java mode
+tasks.register<Copy>("renameWindres") {
+    dependsOn("includeSharedAssets","includeJavaModeResources")
+    val dir = composeResources("modes/java/application/launch4j/bin/")
+    val os = DefaultNativePlatform.getCurrentOperatingSystem()
+    val platform = when {
+        os.isWindows -> "windows"
+        os.isMacOsX -> "macos"
+        else -> "linux"
+    }
+    from(dir) {
+        include("*-$platform*")
+        rename("(.*)-$platform(.*)", "$1$2")
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    into(dir)
+}
 tasks.register("includeProcessingResources"){
     dependsOn(
         "includeCore",
@@ -404,7 +492,8 @@ tasks.register("includeProcessingResources"){
         "includeSharedAssets",
         "includeProcessingExamples",
         "includeProcessingWebsiteExamples",
-        "includeJavaModeResources"
+        "includeJavaModeResources",
+        "renameWindres"
     )
     mustRunAfter("includeJdk")
     finalizedBy("signResources")

@@ -7,7 +7,6 @@ plugins {
 repositories{
     mavenCentral()
     google()
-    maven("https://jogamp.org/deployment/maven")
 }
 
 sourceSets{
@@ -69,7 +68,7 @@ tasks.register<Copy>("copyCore"){
     into(coreProject.layout.projectDirectory.dir("library"))
 }
 
-val legacyLibraries = arrayOf("dxf","io","net","serial","svg")
+val legacyLibraries = arrayOf("io","net")
 legacyLibraries.forEach { library ->
     tasks.register<Copy>("library-$library-extraResources"){
         val build = project(":java:libraries:$library").tasks.named("build")
@@ -82,13 +81,14 @@ legacyLibraries.forEach { library ->
         include("library/**/*")
         include("examples/**/*")
         into( javaMode("/libraries/$library"))
+        dirPermissions { unix("rwx------") };
     }
     bundle.configure {
         dependsOn("library-$library-extraResources")
     }
 }
 
-val libraries = arrayOf("dxf", "pdf")
+val libraries = arrayOf("dxf", "pdf", "serial", "svg")
 
 libraries.forEach { library ->
     val name = "create-$library-library"
@@ -101,11 +101,8 @@ libraries.forEach { library ->
         from(project.layout.buildDirectory.dir("library"))
         into(javaMode("/libraries/$library"))
     }
-    bundle.configure {
-        dependsOn(name)
-    }
+    tasks.named("extraResources"){ dependsOn("library-$library-extraResources") }
 }
-
 tasks.jar { dependsOn("extraResources") }
 tasks.processResources{ finalizedBy("extraResources") }
 tasks.compileTestJava{ finalizedBy("extraResources") }
