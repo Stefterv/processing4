@@ -1,5 +1,3 @@
-import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
-
 plugins {
     java
 }
@@ -68,7 +66,7 @@ tasks.register<Copy>("copyCore"){
     into(coreProject.layout.projectDirectory.dir("library"))
 }
 
-val legacyLibraries = arrayOf("io","net")
+val legacyLibraries = arrayOf("io", "net")
 legacyLibraries.forEach { library ->
     tasks.register<Copy>("library-$library-extraResources"){
         val build = project(":java:libraries:$library").tasks.named("build")
@@ -101,8 +99,11 @@ libraries.forEach { library ->
         from(project.layout.buildDirectory.dir("library"))
         into(javaMode("/libraries/$library"))
     }
-    tasks.named("extraResources"){ dependsOn("library-$library-extraResources") }
+    bundle.configure {
+        dependsOn(name)
+    }
 }
+
 tasks.jar { dependsOn("extraResources") }
 tasks.processResources{ finalizedBy("extraResources") }
 tasks.compileTestJava{ finalizedBy("extraResources") }

@@ -6,8 +6,6 @@ plugins {
 
     alias(libs.plugins.versions)
     alias(libs.plugins.mavenPublish) apply false
-
-    alias(libs.plugins.versions)
 }
 
 // Set the build directory to not /build to prevent accidental deletion through the clean action

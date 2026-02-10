@@ -1,43 +1,21 @@
 package processing.app.gradle
 
-import androidx.compose.foundation.VerticalScrollbar
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.rememberScrollbarAdapter
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Checkbox
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposePanel
-import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.formdev.flatlaf.util.SwingUtils
-import com.github.ajalt.mordant.rendering.TextStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,12 +25,9 @@ import processing.app.Sketch
 import processing.app.ui.Editor
 import processing.app.ui.EditorFooter
 import processing.app.ui.Theme
-import processing.app.ui.theme.ProcessingTheme
+import processing.app.ui.theme.PDETheme
 import processing.app.watchFile
-import java.awt.Dimension
-import java.util.UUID
-import javax.swing.JCheckBox
-import javax.swing.JPanel
+import java.util.*
 import javax.swing.SwingUtilities
 
 class GradleSettings{
@@ -107,7 +82,7 @@ class GradleSettings{
             }
             val stateVertical = rememberScrollState(0)
 
-            ProcessingTheme {
+            PDETheme {
                 Box {
                     Row(
                         modifier = Modifier

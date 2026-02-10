@@ -17,14 +17,11 @@ import org.gradle.tooling.events.problems.internal.DefaultSingleProblemEvent
 import org.gradle.tooling.events.task.TaskFinishEvent
 import org.gradle.tooling.events.task.TaskStartEvent
 import org.gradle.tooling.events.task.TaskSuccessResult
-import processing.app.Base.DEBUG
-import processing.app.Base.getSketchbookFolder
-import processing.app.Base.getVersionName
+import processing.app.Base.*
 import processing.app.Language.text
 import processing.app.Messages
 import processing.app.Platform
 import processing.app.Platform.getContentFile
-import processing.app.Platform.getSettingsFolder
 import processing.app.Settings
 import processing.app.Sketch
 import processing.app.gradle.Log.Companion.startLogServer
@@ -33,7 +30,6 @@ import processing.app.ui.EditorStatus
 import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeText
-import kotlin.text.split
 
 /*
 * The gradle job runs the gradle tasks and manages the gradle connection

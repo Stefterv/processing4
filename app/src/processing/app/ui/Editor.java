@@ -27,6 +27,7 @@ import com.formdev.flatlaf.util.SystemInfo;
 import processing.app.*;
 import processing.app.Formatter;
 import processing.app.contrib.ContributionManager;
+import processing.app.gradle.GradleService;
 import processing.app.laf.PdeMenuItemUI;
 import processing.app.syntax.*;
 import processing.core.PApplet;
@@ -213,10 +214,10 @@ public abstract class Editor extends JFrame implements RunnerListener {
       spacer.setAlignmentX(Component.LEFT_ALIGNMENT);
       box.add(spacer);
     }
-      if (Platform.isLinux()) {
-          setUndecorated(true);
-          getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
-      }
+    if (Platform.isLinux()) {
+      setUndecorated(true);
+      getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+    }
 
     rebuildModePopup();
     toolbar = createToolbar();
@@ -373,7 +374,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
       });
     }
 
-      PreferencesEvents.onUpdated(this::updateTheme);
+    PreferencesEvents.onUpdated(this::updateTheme);
   }
 
 
@@ -1075,7 +1076,7 @@ public abstract class Editor extends JFrame implements RunnerListener {
     var updateTrigger = new JMenuItem(Language.text("menu.develop.check_for_updates"));
     updateTrigger.addActionListener(e -> {
         Preferences.unset("update.last");
-        Preferences.setInteger("update.beta_welcome", 0);
+      Preferences.setInteger("update.beta_welcome", 0);
         new UpdateCheck(base);
     });
     developMenu.add(updateTrigger);
