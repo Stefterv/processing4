@@ -92,9 +92,10 @@ class GradleJob(
                 }
                 return@map code.fileName
             }
+        val group = System.getProperty("processing.group", "org.processing")
         // Collect the variables to pass to gradle
         val variables = mapOf(
-            "group" to System.getProperty("processing.group", "org.processing"),
+            "group" to group,
             "version" to getVersionName(),
             "sketchFolder" to sketchFolder,
             "sketchbook" to getSketchbookFolder(),
@@ -173,7 +174,7 @@ class GradleJob(
                 "Processing Java",
                 "The Processing Java mode for Gradle",
                 null,
-                "org.processing.java",
+                "$group.java",
                 getVersionName()
             ))
             val propertiesFile = sketchFolder.resolve(Sketch.PROPERTIES_NAME)

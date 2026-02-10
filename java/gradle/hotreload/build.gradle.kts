@@ -17,7 +17,7 @@ dependencies{
 gradlePlugin{
     plugins{
         create("processing.java.hotreload"){
-            id = "org.processing.java.hotreload"
+            id = "${project(":java").group}.java.hotreload"
             implementationClass = "org.processing.java.gradle.ProcessingHotReloadPlugin"
         }
     }

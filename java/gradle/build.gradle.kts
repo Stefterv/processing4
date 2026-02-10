@@ -26,7 +26,7 @@ gradlePlugin{
     vcsUrl = "https://github.com/processing/processing4"
     plugins{
         create("processing.java"){
-            id = "$group.java"
+            id = "${project(":java").group}.java"
             displayName = "Processing Plugin"
             description = "Gradle plugin for building Processing sketches"
             tags = listOf("processing", "sketch", "dsl")
@@ -44,8 +44,6 @@ publishing{
         }
     }
 }
-// Grab the group before running tests, since the group is used in the test configuration and may be modified by the publishing configuration
-val testGroup = group.toString()
 tasks.withType<Test>().configureEach {
-    systemProperty("project.group", testGroup)
+    systemProperty("project.group", project(":java").group)
 }

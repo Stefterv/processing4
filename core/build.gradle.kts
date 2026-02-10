@@ -46,7 +46,10 @@ publishing{
 
 mavenPublishing{
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
-    signAllPublications()
+    if (project.hasProperty("signingInMemoryKey")) {
+        signAllPublications()
+    }
+
 
     pom{
         name.set("Processing Core")

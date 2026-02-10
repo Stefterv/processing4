@@ -53,6 +53,7 @@ compose.desktop {
 
         jvmArgs(
             *listOf(
+                Pair("processing.group", group),
             Pair("processing.version", rootProject.version),
             Pair("processing.revision", findProperty("revision") ?: Int.MAX_VALUE),
             Pair("processing.contributions.source", "https://contributions.processing.org/contribs"),
